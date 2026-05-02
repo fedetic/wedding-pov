@@ -58,23 +58,21 @@ These are table-stakes or differentiators to add in a future milestone:
 
 ## Traceability
 
-*(Filled by roadmap agent)*
-
-| REQ-ID | Phase |
-|--------|-------|
-| AUTH-01 | — |
-| AUTH-02 | — |
-| AUTH-03 | — |
-| EVENT-01 | — |
-| EVENT-02 | — |
-| EVENT-03 | — |
-| QR-01 | — |
-| GUEST-01 | — |
-| GUEST-02 | — |
-| GUEST-03 | — |
-| GUEST-04 | — |
-| GUEST-05 | — |
-| INFRA-01 | — |
-| INFRA-02 | — |
-| INFRA-03 | — |
-| INFRA-04 | — |
+| REQ-ID | Phase | Status |
+|--------|-------|--------|
+| AUTH-01 | Phase 1 — Foundation + Auth | Pending |
+| AUTH-02 | Phase 1 — Foundation + Auth | Pending |
+| AUTH-03 | Phase 1 — Foundation + Auth | Pending |
+| EVENT-01 | Phase 2 — Events + QR | Pending |
+| EVENT-02 | Phase 2 — Events + QR | Pending |
+| EVENT-03 | Phase 2 — Events + QR | Pending |
+| QR-01 | Phase 2 — Events + QR | Pending |
+| GUEST-01 | Phase 3 — Guest Upload | Pending |
+| GUEST-02 | Phase 3 — Guest Upload | Pending |
+| GUEST-03 | Phase 3 — Guest Upload | Pending |
+| GUEST-04 | Phase 3 — Guest Upload | Pending |
+| GUEST-05 | Phase 3 — Guest Upload | Pending |
+| INFRA-01 | Phase 2 — Events + QR | Pending |
+| INFRA-02 | Phase 3 — Guest Upload | Pending |
+| INFRA-03 | Phase 3 — Guest Upload | Pending |
+| INFRA-04 | Phase 3 — Guest Upload | Pending |
