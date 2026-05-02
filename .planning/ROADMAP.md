@@ -12,7 +12,7 @@ Four phases from zero to a live, wedding-ready photo upload app. Phase 1 establi
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Foundation + Auth** - Organizer accounts, email/password auth, Google Drive OAuth with encrypted token storage, Railway deployment
+- [ ] **Phase 1: Foundation + Auth** - Organizer accounts, email/password auth, Google Drive OAuth with encrypted token storage, Railway deployment (4 plans)
 - [ ] **Phase 2: Events + QR** - Event CRUD, Drive folder creation on event save, short slug URLs, QR code PNG download, active/inactive toggle
 - [ ] **Phase 3: Guest Upload** - Mobile-first upload page, nickname entry, photo selection up to limit, server-brokered resumable upload, per-photo progress, HEIC conversion, rate limiting, completion confirmation
 - [ ] **Phase 4: Launch Readiness** - OAuth app promoted to Production, end-to-end smoke test on real mobile devices, filename attribution verified in Drive
@@ -29,7 +29,13 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Organizer can click "Connect Google Drive," complete the OAuth flow, and see a "Drive connected" confirmation
   4. Drive access persists after session expiry — refresh token is stored and works without re-auth
   5. App is deployed and reachable at a public Railway URL
-**Plans**: TBD
+**Plans**: 4 plans
+
+Plans:
+- [ ] 01-01-PLAN.md — Bootstrap Next.js 15, install deps, Drizzle schema (7 tables), drizzle-kit push to Neon
+- [ ] 01-02-PLAN.md — Better Auth config, auth API route, middleware, Register + Login forms, Dashboard shell
+- [ ] 01-03-PLAN.md — Google Drive OAuth routes (/api/drive/connect, /api/drive/callback), AES-256-GCM token encryption
+- [ ] 01-04-PLAN.md — Railway deployment, env vars, GCP redirect URI registration, smoke test all auth flows
 
 ### Phase 2: Events + QR
 **Goal**: Organizer can create events, generate scannable QR codes, and have Drive folders ready to receive photos
