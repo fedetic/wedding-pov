@@ -704,22 +704,25 @@ npx @better-auth/cli generate --config src/lib/auth.ts
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Email verification requirement for AUTH-01/02**
    - What we know: Better Auth supports `requireEmailVerification: true` but that needs an email provider (Resend, Nodemailer, etc.)
    - What's unclear: Is email verification required for v1, or is instant account access acceptable?
    - Recommendation: Disable email verification for v1 (set `requireEmailVerification: false`). Add email verification in a later hardening phase. This unblocks Phase 1 without needing an email provider.
+   - RESOLVED: Email verification disabled for v1 (`requireEmailVerification: false`). Implemented in Plan 02 Better Auth config.
 
 2. **GCP OAuth App Verification timing**
    - What we know: Testing mode causes 7-day refresh token expiry. Verification required before any real event.
    - What's unclear: How long does `drive.file` (non-sensitive) verification take? (Google states "a few days" but varies.)
    - Recommendation: Submit verification as soon as GCP credentials exist (during Phase 1 deployment task). Flag as a launch gate.
+   - RESOLVED: Submit for verification during Phase 1 deployment (Plan 04). Flagged as a hard launch gate in Phase 4. `drive.file` is non-sensitive scope — basic verification only, no security audit.
 
 3. **Drizzle `push` vs `migrate` for development workflow**
    - What we know: `push` is faster for dev but can be destructive; `migrate` is safe for production
    - What's unclear: What's the team's preference for local dev schema changes during Phase 1?
    - Recommendation: Use `push` during Phase 1 development (schema is still being defined); switch to `generate` + `migrate` from Phase 2 onwards.
+   - RESOLVED: Use `drizzle-kit push` for Phase 1 (schema still being defined). Switch to `drizzle-kit generate` + `drizzle-kit migrate` from Phase 2 onwards. Implemented as [BLOCKING] task in Plan 01.
 
 ---
 

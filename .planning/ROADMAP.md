@@ -25,7 +25,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Requirements**: AUTH-01, AUTH-02, AUTH-03
 **Success Criteria** (what must be TRUE):
   1. Organizer can register with email and password and land on a dashboard
-  2. Organizer can log out and log back in with their credentials
+  2. Organizer can log back in with their credentials after logging out (logout is v2; login persistence is the testable criterion here)
   3. Organizer can click "Connect Google Drive," complete the OAuth flow, and see a "Drive connected" confirmation
   4. Drive access persists after session expiry — refresh token is stored and works without re-auth
   5. App is deployed and reachable at a public Railway URL
