@@ -11,6 +11,13 @@ type UploadRecord = {
   initiatedAt: string;
 };
 
+type ApiResponse = {
+  records: UploadRecord[];
+  total: number;
+  page: number;
+  totalPages: number;
+};
+
 type Props = {
   event: { id: string; name: string };
   onClose: () => void;
@@ -24,24 +31,30 @@ function formatBytes(bytes: number | null) {
 }
 
 export function HistoryModal({ event, onClose }: Props) {
-  const [records, setRecords] = useState<UploadRecord[] | null>(null);
+  const [page, setPage] = useState(1);
+  const [data, setData] = useState<ApiResponse | null>(null);
   const [error, setError] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`/api/events/${event.id}/uploads`)
+    setLoading(true);
+    setError(false);
+    fetch(`/api/events/${event.id}/uploads?page=${page}`)
       .then((r) => r.json())
-      .then((data: { records: UploadRecord[] }) => setRecords(data.records))
-      .catch(() => setError(true));
-  }, [event.id]);
+      .then((d: ApiResponse) => setData(d))
+      .catch(() => setError(true))
+      .finally(() => setLoading(false));
+  }, [event.id, page]);
 
-  // Group by guest nickname
-  const grouped = records
-    ? records.reduce<Record<string, UploadRecord[]>>((acc, r) => {
-        if (!acc[r.guestNickname]) acc[r.guestNickname] = [];
-        acc[r.guestNickname].push(r);
-        return acc;
-      }, {})
-    : null;
+  // Group current page's records by guest nickname
+  const grouped = data?.records.reduce<Record<string, UploadRecord[]>>(
+    (acc, r) => {
+      if (!acc[r.guestNickname]) acc[r.guestNickname] = [];
+      acc[r.guestNickname].push(r);
+      return acc;
+    },
+    {},
+  );
 
   return (
     <div
@@ -73,15 +86,15 @@ export function HistoryModal({ event, onClose }: Props) {
             <p className="text-sm text-red-500">Failed to load history.</p>
           )}
 
-          {!records && !error && (
+          {loading && (
             <p className="text-sm text-gray-400">Loading…</p>
           )}
 
-          {records && records.length === 0 && (
+          {!loading && data?.records.length === 0 && (
             <p className="text-sm text-gray-500">No uploads yet.</p>
           )}
 
-          {grouped && Object.keys(grouped).length > 0 && (
+          {!loading && grouped && Object.keys(grouped).length > 0 && (
             <div className="space-y-5">
               {Object.entries(grouped).map(([nickname, uploads]) => (
                 <div key={nickname}>
@@ -121,9 +134,34 @@ export function HistoryModal({ event, onClose }: Props) {
 
         {/* Footer */}
         <div className="px-6 py-4 border-t border-gray-100 shrink-0">
-          <p className="text-xs text-gray-400 text-right">
-            {records ? `${records.length} total upload${records.length !== 1 ? "s" : ""}` : ""}
-          </p>
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-gray-400">
+              {data ? `${data.total} total upload${data.total !== 1 ? "s" : ""}` : ""}
+            </p>
+            {data && data.totalPages > 1 && (
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setPage((p) => p - 1)}
+                  disabled={page === 1 || loading}
+                  className="text-xs text-gray-500 hover:text-black disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  ← Prev
+                </button>
+                <span className="text-xs text-gray-400">
+                  {page} / {data.totalPages}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setPage((p) => p + 1)}
+                  disabled={page === data.totalPages || loading}
+                  className="text-xs text-gray-500 hover:text-black disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  Next →
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
