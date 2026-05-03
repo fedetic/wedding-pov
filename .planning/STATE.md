@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2025-05-02)
 
 **Core value:** Guests can share their POV photos at an event with zero friction — scan, name, upload, done.
-**Current focus:** Phase 1 — Foundation + Auth
+**Current focus:** Phase 3 — Guest Upload
 
 ## Current Position
 
-Phase: 1 of 4 (Foundation + Auth)
-Plan: 0 of ? in current phase
-Status: Ready to plan
-Last activity: 2025-05-02 — Roadmap created; ready to begin Phase 1 planning
+Phase: 3 of 4 (Guest Upload)
+Plan: 2 of 3 in current phase (03-01 complete)
+Status: In progress
+Last activity: 2026-05-03 — 03-01 complete: upload API route + HEIC conversion + rate limiting
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [████████░░] ~75%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 0
-- Average duration: —
-- Total execution time: 0 hours
+- **Total plans completed: 1** (03-01)
+- Average duration: ~3 minutes
+- Total execution time: ~3 minutes
 
 **By Phase:**
 
@@ -68,6 +68,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2025-05-02
-Stopped at: Roadmap created — all 16 v1 requirements mapped across phases 1-3; Phase 4 is launch-readiness hardening
+Last session: 2026-05-03
+Stopped at: 03-01 complete — upload API route, Drive helper, rate limiter committed (670b832)
 Resume file: None
