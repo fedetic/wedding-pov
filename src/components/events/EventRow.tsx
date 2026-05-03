@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { QRModal } from "./QRModal";
 import { EditEventModal } from "./EditEventModal";
+import { HistoryModal } from "./HistoryModal";
 
 export type EventData = {
   id: string;
@@ -24,6 +25,7 @@ export function EventRow({ event, onToggleError: _onToggleError }: Props) {
   const [photoLimit, setPhotoLimit] = useState(event.photoLimit);
   const [showQR, setShowQR] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
 
   return (
     <>
@@ -67,6 +69,13 @@ export function EventRow({ event, onToggleError: _onToggleError }: Props) {
                 Drive ↗
               </a>
             )}
+            <button
+              type="button"
+              onClick={() => setShowHistory(true)}
+              className="font-semibold underline text-black hover:text-gray-500"
+            >
+              History
+            </button>
           </div>
         </td>
 
@@ -83,6 +92,13 @@ export function EventRow({ event, onToggleError: _onToggleError }: Props) {
       </tr>
 
       {showQR && <QRModal event={event} onClose={() => setShowQR(false)} />}
+
+      {showHistory && (
+        <HistoryModal
+          event={{ id: event.id, name: event.name }}
+          onClose={() => setShowHistory(false)}
+        />
+      )}
 
       {showEdit && (
         <EditEventModal

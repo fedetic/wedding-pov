@@ -11,11 +11,13 @@ type QRModalProps = {
 export function QRModal({ event, onClose }: QRModalProps) {
   const [dataUrl, setDataUrl] = useState<string | null>(null);
   const [generating, setGenerating] = useState(true);
+  const [copied, setCopied] = useState(false);
   const backdropRef = useRef<HTMLDivElement>(null);
+  const [guestUrl, setGuestUrl] = useState("");
 
-  // Generate QR code on mount
   useEffect(() => {
     const url = `${window.location.origin}/e/${event.slug}`;
+    setGuestUrl(url);
     QRCode.toDataURL(url, { width: 256, margin: 2 })
       .then((result) => {
         setDataUrl(result);
@@ -26,7 +28,6 @@ export function QRModal({ event, onClose }: QRModalProps) {
       });
   }, [event.slug]);
 
-  // Close on Escape key
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
@@ -49,6 +50,16 @@ export function QRModal({ event, onClose }: QRModalProps) {
     document.body.removeChild(a);
   }
 
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(guestUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard API unavailable — silently ignore
+    }
+  }
+
   return (
     <div
       ref={backdropRef}
@@ -69,10 +80,9 @@ export function QRModal({ event, onClose }: QRModalProps) {
           </button>
         </div>
 
-        {/* Event name */}
         <p className="text-sm font-normal text-gray-600 mb-4">{event.name}</p>
 
-        {/* QR image area */}
+        {/* QR image */}
         <div className="flex items-center justify-center mb-4 min-h-[256px]">
           {generating ? (
             <p className="text-sm font-normal text-gray-400">Generating…</p>
@@ -90,6 +100,20 @@ export function QRModal({ event, onClose }: QRModalProps) {
             </p>
           )}
         </div>
+
+        {/* Shareable URL */}
+        {guestUrl && (
+          <div className="flex items-center gap-2 mb-4 border border-gray-200 rounded px-3 py-2">
+            <span className="flex-1 text-xs text-gray-500 truncate">{guestUrl}</span>
+            <button
+              type="button"
+              onClick={handleCopy}
+              className="shrink-0 text-xs font-semibold text-black hover:text-gray-500"
+            >
+              {copied ? "Copied!" : "Copy"}
+            </button>
+          </div>
+        )}
 
         {/* Actions */}
         <div className="flex flex-col gap-2">

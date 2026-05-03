@@ -63,26 +63,20 @@ export function GuestUploadClient({ eventSlug, eventName, photoLimit }: Props) {
   async function handleUpload() {
     if (photos.length === 0 || overLimit) return;
     setStep('upload');
-
-    const snapshot = [...photos];
-
-    try {
-      await uploadSequentially(snapshot, nickname);
-      setStep('complete');
-    } catch {
-      setStep('error');
-    }
+    const hadError = await uploadPhotos([...photos], nickname);
+    setStep(hadError ? 'error' : 'complete');
   }
 
-  // ── XHR Upload Loop (sequential) ─────────────────────────────────────────────
+  // ── XHR Upload (non-aborting: continues past individual failures) ─────────────
 
-  async function uploadSequentially(photoList: PhotoState[], nick: string) {
+  async function uploadPhotos(photoList: PhotoState[], nick: string): Promise<boolean> {
+    let hadError = false;
     for (let i = 0; i < photoList.length; i++) {
       setPhotos((prev) =>
         prev.map((p, idx) => (idx === i ? { ...p, status: 'uploading' } : p))
       );
 
-      await new Promise<void>((resolve, reject) => {
+      await new Promise<void>((resolve) => {
         const xhr = new XMLHttpRequest();
         const formData = new FormData();
         formData.append('file', photoList[i].file);
@@ -107,39 +101,105 @@ export function GuestUploadClient({ eventSlug, eventName, photoLimit }: Props) {
                   : p
               )
             );
-            resolve();
           } else {
+            hadError = true;
             setPhotos((prev) =>
-              prev.map((p, idx) => (idx === i ? { ...p, status: 'error' } : p))
+              prev.map((p, idx) => (idx === i ? { ...p, status: 'error', progress: 0 } : p))
             );
-            reject(new Error(`Upload failed: ${xhr.status}`));
           }
+          resolve();
         };
 
         xhr.onerror = () => {
+          hadError = true;
           setPhotos((prev) =>
-            prev.map((p, idx) => (idx === i ? { ...p, status: 'error' } : p))
+            prev.map((p, idx) => (idx === i ? { ...p, status: 'error', progress: 0 } : p))
           );
-          reject(new Error('Network error'));
+          resolve();
         };
 
         xhr.open('POST', `/api/upload/${eventSlug}`);
         xhr.send(formData);
       });
     }
+    return hadError;
   }
 
-  // ── Step: Try Again ──────────────────────────────────────────────────────────
+  // ── Retry only failed photos ─────────────────────────────────────────────────
 
-  function handleTryAgain() {
-    setPhotos((prev) =>
-      prev.map((p) => ({ ...p, progress: 0, status: 'pending' }))
-    );
+  async function handleRetryFailed() {
+    // Reset failed photos to pending
+    const failedIndexes: number[] = [];
+    setPhotos((prev) => {
+      const next = prev.map((p, i) => {
+        if (p.status === 'error') {
+          failedIndexes.push(i);
+          return { ...p, status: 'pending' as const, progress: 0 };
+        }
+        return p;
+      });
+      return next;
+    });
+    setStep('upload');
+    // Give state a tick to settle before reading
+    await new Promise((r) => setTimeout(r, 50));
+    setPhotos((prev) => {
+      const snapshot = [...prev];
+      (async () => {
+        const retries = snapshot.filter((_, i) => failedIndexes.includes(i));
+        const indexMap = failedIndexes;
+        let hadError = false;
+        for (let j = 0; j < retries.length; j++) {
+          const i = indexMap[j];
+          await new Promise<void>((resolve) => {
+            const xhr = new XMLHttpRequest();
+            const formData = new FormData();
+            formData.append('file', retries[j].file);
+            formData.append('nickname', nickname);
+
+            xhr.upload.onprogress = (e) => {
+              if (e.lengthComputable) {
+                const pct = Math.round((e.loaded / e.total) * 100);
+                setPhotos((p) => p.map((ph, idx) => (idx === i ? { ...ph, progress: pct } : ph)));
+              }
+            };
+
+            xhr.onload = () => {
+              if (xhr.status === 200) {
+                const data = JSON.parse(xhr.responseText) as { driveFileId?: string };
+                setPhotos((p) =>
+                  p.map((ph, idx) =>
+                    idx === i ? { ...ph, status: 'done', progress: 100, driveFileId: data.driveFileId } : ph
+                  )
+                );
+              } else {
+                hadError = true;
+                setPhotos((p) => p.map((ph, idx) => (idx === i ? { ...ph, status: 'error', progress: 0 } : ph)));
+              }
+              resolve();
+            };
+
+            xhr.onerror = () => {
+              hadError = true;
+              setPhotos((p) => p.map((ph, idx) => (idx === i ? { ...ph, status: 'error', progress: 0 } : ph)));
+              resolve();
+            };
+
+            xhr.open('POST', `/api/upload/${eventSlug}`);
+            xhr.send(formData);
+          });
+        }
+        setStep(hadError ? 'error' : 'complete');
+      })();
+      return snapshot;
+    });
+  }
+
+  function handleSelectDifferent() {
+    setPhotos([]);
     if (fileInputRef.current) fileInputRef.current.value = '';
     setStep('select');
   }
-
-  // ── Render ───────────────────────────────────────────────────────────────────
 
   const cardClass =
     'bg-white rounded-2xl shadow p-8 w-full max-w-md mx-auto';
@@ -332,24 +392,50 @@ export function GuestUploadClient({ eventSlug, eventName, photoLimit }: Props) {
 
   // ── Error Step ────────────────────────────────────────────────────────────────
 
+  const doneCount = photos.filter((p) => p.status === 'done').length;
+  const failedCount = photos.filter((p) => p.status === 'error').length;
+
   return (
     <div
       style={{ backgroundColor: '#faf9f7', minHeight: '100vh' }}
       className="flex items-center justify-center px-4"
     >
-      <div className={`${cardClass} text-center`}>
+      <div className={`${cardClass}`}>
         <h2 className="text-3xl font-semibold text-[#1a1a1a] mb-2">
-          Something went wrong
+          Some photos failed
         </h2>
         <p className="text-base text-[#6b7280] mb-6">
-          One or more photos couldn&apos;t be uploaded.
+          {doneCount > 0 && `${doneCount} uploaded · `}{failedCount} failed. You can retry the failed ones.
         </p>
+
+        {/* Per-photo status list */}
+        <div className="space-y-2 mb-6">
+          {photos.map((photo, idx) => (
+            <div key={idx} className="flex items-center gap-3 text-sm">
+              <span
+                className={`shrink-0 font-bold ${
+                  photo.status === 'done' ? 'text-green-600' : 'text-red-500'
+                }`}
+              >
+                {photo.status === 'done' ? '✓' : '×'}
+              </span>
+              <span className="truncate text-[#6b7280]">{photo.file.name}</span>
+            </div>
+          ))}
+        </div>
+
         <button
-          onClick={handleTryAgain}
-          className="w-full text-white text-base font-semibold rounded-lg px-4 py-3 min-h-[44px]"
+          onClick={handleRetryFailed}
+          className="w-full text-white text-base font-semibold rounded-lg px-4 py-3 min-h-[44px] mb-3"
           style={{ backgroundColor: '#b85c52' }}
         >
-          Try again
+          Retry failed ({failedCount})
+        </button>
+        <button
+          onClick={handleSelectDifferent}
+          className="w-full text-base text-[#6b7280] font-medium rounded-lg px-4 py-3 min-h-[44px] border border-gray-200 hover:bg-gray-50"
+        >
+          Start over
         </button>
       </div>
     </div>
