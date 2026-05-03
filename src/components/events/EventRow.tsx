@@ -10,6 +10,8 @@ export type EventData = {
   slug: string;
   photoLimit: number;
   isActive: boolean;
+  createdAt: Date;
+  driveFolderId: string | null;
 };
 
 type Props = {
@@ -47,6 +49,9 @@ export function EventRow({ event, onToggleError }: Props) {
     <>
       <tr className="border-t border-gray-100">
         <td className="px-4 py-3 text-sm">{event.name}</td>
+        <td className="px-4 py-3 text-sm text-gray-500">
+          {event.createdAt.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })}
+        </td>
         <td className="px-4 py-3 text-sm w-20 text-center">{event.photoLimit}</td>
         <td className="px-4 py-3 w-28">
           <StatusBadge isActive={isActive} />
@@ -61,6 +66,16 @@ export function EventRow({ event, onToggleError }: Props) {
           >
             QR code
           </button>
+          {event.driveFolderId && (
+            <a
+              href={`https://drive.google.com/drive/folders/${event.driveFolderId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm underline font-semibold text-black hover:text-gray-600 mr-3"
+            >
+              Drive ↗
+            </a>
+          )}
           <button
             type="button"
             onClick={handleToggle}

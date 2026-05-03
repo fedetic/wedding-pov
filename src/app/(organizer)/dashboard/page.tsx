@@ -7,6 +7,7 @@ import { redirect } from "next/navigation";
 import { EventList } from "@/components/events/EventList";
 import { EventCreatedBanner } from "@/components/events/EventCreatedBanner";
 import { SignOutButton } from "@/components/SignOutButton";
+import { DisconnectDriveButton } from "@/components/DisconnectDriveButton";
 
 export const metadata = { title: "Dashboard — Wedding POV" };
 
@@ -58,10 +59,13 @@ export default async function DashboardPage({
         )}
 
         {driveConnected ? (
-          <p className="text-sm text-gray-700">
-            ✓ Google Drive is connected. Photos from your events will be saved
-            there.
-          </p>
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-gray-700">
+              ✓ Google Drive is connected. Photos from your events will be saved
+              there.
+            </p>
+            <DisconnectDriveButton />
+          </div>
         ) : (
           <div>
             <p className="text-sm text-gray-600 mb-3">

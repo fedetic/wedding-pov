@@ -38,6 +38,9 @@ export function EventListClient({ initialEvents }: Props) {
             <th className="text-left text-sm font-semibold text-gray-500 uppercase tracking-wide px-4 py-2">
               Name
             </th>
+            <th className="text-left text-sm font-semibold text-gray-500 uppercase tracking-wide px-4 py-2">
+              Created
+            </th>
             <th className="text-left text-sm font-semibold text-gray-500 uppercase tracking-wide px-4 py-2 w-20">
               Limit
             </th>

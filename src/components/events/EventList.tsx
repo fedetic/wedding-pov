@@ -13,6 +13,8 @@ export async function EventList({ userId }: Props) {
       slug: events.slug,
       photoLimit: events.photoLimit,
       isActive: events.isActive,
+      createdAt: events.createdAt,
+      driveFolderId: events.driveFolderId,
     })
     .from(events)
     .where(eq(events.organizerId, userId))
