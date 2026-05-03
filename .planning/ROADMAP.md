@@ -89,5 +89,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 |-------|----------------|--------|-----------|
 | 1. Foundation + Auth | 0/? | Not started | - |
 | 2. Events + QR | 0/? | Not started | - |
-| 3. Guest Upload | 0/? | Not started | - |
+| 3. Guest Upload | 2/3 | In progress | - |
 | 4. Launch Readiness | 0/? | Not started | - |
