@@ -1,7 +1,7 @@
 ---
 phase: 2
 slug: events-qr
-status: draft
+status: approved
 shadcn_initialized: false
 preset: none
 created: 2025-05-02
@@ -45,6 +45,7 @@ Exceptions:
 - Table row padding: `px-4 py-3` (horizontal 16px, vertical 12px) — maintains text alignment without excessive row height
 - Toggle button touch target: minimum 44px height via `min-h-[44px]` for accessibility
 - Modal backdrop: full viewport — no spacing token applies
+- Badge vertical padding: `py-0.5` (2px) — inline badge element requires sub-4px vertical padding to avoid inflating table row height; horizontal padding uses `px-2` (8px) which is on-scale
 
 ---
 
@@ -53,11 +54,13 @@ Exceptions:
 | Role | Size | Tailwind | Weight | Tailwind | Line Height | Usage |
 |------|------|----------|--------|----------|-------------|-------|
 | Body | 16px | `text-base` | 400 | `font-normal` | 1.5 | Descriptive text, table cell content |
-| Label | 14px | `text-sm` | 500 | `font-medium` | 1.25 | Form labels, table column headers, badge text |
-| Section heading | 18px | `text-lg` | 500 | `font-medium` | 1.2 | Card/section titles (e.g. "Events") |
+| Label | 14px | `text-sm` | 600 | `font-semibold` | 1.25 | Form labels, table column headers, badge text |
+| Section heading | 18px | `text-lg` | 600 | `font-semibold` | 1.2 | Card/section titles (e.g. "Events") |
 | Page heading | 24px | `text-2xl` | 600 | `font-semibold` | 1.2 | Page-level h1 (e.g. "Create event") |
 
 Secondary text (helper, timestamps, email): `text-sm text-gray-500` — 14px, weight 400.
+
+**Font weights in use: 2** — `font-normal` (400) for body/secondary text; `font-semibold` (600) for all labels, headings, and interactive elements. Size alone carries hierarchy within the 600-weight group.
 
 ---
 
@@ -112,8 +115,8 @@ Secondary text (helper, timestamps, email): `text-sm text-gray-500` — 14px, we
 ```
 
 **Events section header:**
-- `<h2 className="text-lg font-medium">Events</h2>`
-- "Create event" link: `<a href="/dashboard/events/new" className="text-sm font-medium underline">Create event</a>` — right-aligned via `flex justify-between items-center mb-4`
+- `<h2 className="text-lg font-semibold">Events</h2>`
+- "Create event" link: `<a href="/dashboard/events/new" className="text-sm font-semibold underline">Create event</a>` — right-aligned via `flex justify-between items-center mb-4`
 
 ---
 
@@ -128,12 +131,12 @@ Secondary text (helper, timestamps, email): `text-sm text-gray-500` — 14px, we
 │
 │  Create event          [text-2xl font-semibold mb-6]
 │
-│  Event name *          [label text-sm font-medium]
+│  Event name *          [label text-sm font-semibold]
 │  [____________________]  [input, border rounded px-3 py-2 text-base]
 │
-│  Photo limit *         [label text-sm font-medium]
+│  Photo limit *         [label text-sm font-semibold]
 │  [30_________________]  [number input]
-│  Up to 100 photos per guest   [text-xs text-gray-500 mt-1]
+│  Up to 100 photos per guest   [text-sm text-gray-500 mt-1]
 │
 │  ☑ Active              [toggle checkbox, default checked]
 │  Guests can upload photos to active events.  [text-sm text-gray-500]
@@ -178,17 +181,17 @@ Secondary text (helper, timestamps, email): `text-sm text-gray-500` — 14px, we
 
 **Table implementation:**
 - `<table className="w-full text-sm">` — full width, text-sm
-- `<thead>` row: `bg-gray-50` — `text-left text-xs font-medium text-gray-500 uppercase tracking-wide px-4 py-2`
+- `<thead>` row: `bg-gray-50` — `text-left text-sm font-semibold text-gray-500 uppercase tracking-wide px-4 py-2`
 - `<tbody>` rows: `border-t border-gray-100` between rows, `px-4 py-3`
 - Column widths: Name auto, Limit 80px, Status 100px, Actions auto
 
 **Status badge:**
-- Active: `<span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Active</span>`
-- Inactive: `<span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">Inactive</span>`
+- Active: `<span className="inline-flex items-center px-2 py-0.5 rounded-full text-sm font-semibold bg-green-100 text-green-800">Active</span>`
+- Inactive: `<span className="inline-flex items-center px-2 py-0.5 rounded-full text-sm font-semibold bg-gray-100 text-gray-600">Inactive</span>`
 
 **Action buttons (in each row):**
-- "QR code" — `<button className="text-sm underline font-medium mr-3">QR code</button>` — triggers QR modal
-- Toggle active/inactive — `<button className="text-sm underline font-medium">` — text changes based on current state:
+- "QR code" — `<button className="text-sm underline font-semibold mr-3">QR code</button>` — triggers QR modal
+- Toggle active/inactive — `<button className="text-sm underline font-semibold">` — text changes based on current state:
   - When active: "Deactivate"
   - When inactive: "Activate"
   - Loading state: "Saving…" with `opacity-50 cursor-not-allowed`
@@ -288,7 +291,7 @@ Backdrop: fixed inset-0 bg-black/50 z-50 flex items-center justify-center
 
 | State | Visual |
 |-------|--------|
-| Default | `bg-black text-white rounded px-4 py-2 font-medium` |
+| Default | `bg-black text-white rounded px-4 py-2 font-semibold` |
 | Hover | `bg-gray-800` (Tailwind: `hover:bg-gray-800`) |
 | Loading / disabled | `opacity-50 cursor-not-allowed` |
 
@@ -296,7 +299,7 @@ Backdrop: fixed inset-0 bg-black/50 z-50 flex items-center justify-center
 
 | State | Visual |
 |-------|--------|
-| Default | `text-sm underline font-medium text-black` |
+| Default | `text-sm underline font-semibold text-black` |
 | Hover | `text-gray-600` (Tailwind: `hover:text-gray-600`) |
 | Loading | `opacity-50 cursor-not-allowed no-underline` |
 
