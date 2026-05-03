@@ -44,7 +44,7 @@ export function EventListClient({ initialEvents }: Props) {
             <th className="text-left text-sm font-semibold text-gray-500 uppercase tracking-wide px-4 py-2 w-20">
               Limit
             </th>
-            <th className="text-left text-sm font-semibold text-gray-500 uppercase tracking-wide px-4 py-2 w-28">
+            <th className="text-left text-sm font-semibold text-gray-500 uppercase tracking-wide px-4 py-2 w-32">
               Status
             </th>
             <th className="text-left text-sm font-semibold text-gray-500 uppercase tracking-wide px-4 py-2">
