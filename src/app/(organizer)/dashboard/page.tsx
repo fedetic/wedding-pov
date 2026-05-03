@@ -6,6 +6,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { EventList } from "@/components/events/EventList";
 import { EventCreatedBanner } from "@/components/events/EventCreatedBanner";
+import { SignOutButton } from "@/components/SignOutButton";
 
 export const metadata = { title: "Dashboard — Wedding POV" };
 
@@ -32,9 +33,12 @@ export default async function DashboardPage({
 
   return (
     <main className="min-h-screen p-8 max-w-2xl mx-auto">
-      <h1 className="text-2xl font-semibold mb-2">
-        Welcome, {session.user.name}
-      </h1>
+      <div className="flex justify-between items-baseline mb-2">
+        <h1 className="text-2xl font-semibold">
+          Welcome, {session.user.name}
+        </h1>
+        <SignOutButton />
+      </div>
       <p className="text-sm text-gray-500 mb-8">{session.user.email}</p>
 
       {/* Google Drive section — unchanged from Phase 1 */}
