@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { google } from "googleapis";
+import { encrypt } from "@/lib/crypto";
 
 export async function GET(request: NextRequest) {
-  // Session guard — must be logged in to connect Drive
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) {
     return NextResponse.redirect(new URL("/login", request.url));
@@ -13,15 +13,20 @@ export async function GET(request: NextRequest) {
   const oauth2Client = new google.auth.OAuth2(
     process.env.GOOGLE_CLIENT_ID!,
     process.env.GOOGLE_CLIENT_SECRET!,
-    // Redirect URI — must exactly match a URI registered in GCP Console
     `${process.env.BETTER_AUTH_URL}/api/drive/callback`,
   );
 
+  // Encrypt the userId into the state param using AES-256-GCM.
+  // This is unforgeable without the ENCRYPTION_KEY, so it acts as both
+  // CSRF protection AND a way to recover the userId in the callback —
+  // without relying on a cookie surviving Google's redirect chain.
+  const state = encrypt(session.user.id);
+
   const authUrl = oauth2Client.generateAuthUrl({
-    access_type: "offline",             // request refresh token
-    prompt: "select_account consent",  // force consent screen to always get refresh token
-    scope: ["https://www.googleapis.com/auth/drive.file"], // ONLY drive.file — never use drive scope
-    state: session.user.id,            // carry userId through the OAuth round-trip
+    access_type: "offline",
+    prompt: "select_account consent",
+    scope: ["https://www.googleapis.com/auth/drive.file"],
+    state,
   });
 
   return NextResponse.redirect(authUrl);

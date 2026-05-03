@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
 import { google } from "googleapis";
 import { db } from "@/lib/db";
 import { googleTokens } from "@/lib/db/schema";
-import { encrypt } from "@/lib/crypto";
+import { encrypt, decrypt } from "@/lib/crypto";
 import { randomUUID } from "crypto";
 
 export async function GET(request: NextRequest) {
@@ -20,20 +18,19 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL("/dashboard?drive=error", appBase));
   }
 
-  // ── CSRF check: verify state matches the nonce we set in the connect route ──
-  const nonce = request.cookies.get("oauth_nonce")?.value;
-  if (!nonce || nonce !== state) {
-    console.error("[drive/callback] CSRF check failed — nonce mismatch");
+  // ── Verify state: decrypt to recover userId (AES-256-GCM — unforgeable) ──
+  let userId: string;
+  try {
+    userId = decrypt(state);
+  } catch {
+    console.error("[drive/callback] State decryption failed — possible CSRF attempt");
     return NextResponse.redirect(new URL("/dashboard?drive=error", appBase));
   }
 
-  // ── Read the actual userId from the session (not from state) ─────────────
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) {
-    console.error("[drive/callback] No active session during callback");
-    return NextResponse.redirect(new URL("/login", appBase));
+  if (!userId) {
+    console.error("[drive/callback] Decrypted userId is empty");
+    return NextResponse.redirect(new URL("/dashboard?drive=error", appBase));
   }
-  const userId = session.user.id;
 
   const oauth2Client = new google.auth.OAuth2(
     process.env.GOOGLE_CLIENT_ID!,
@@ -77,9 +74,5 @@ export async function GET(request: NextRequest) {
     });
 
   console.info("[drive/callback] Drive connected for userId:", userId);
-
-  // Clear the nonce cookie
-  const response = NextResponse.redirect(new URL("/dashboard?drive=connected", appBase));
-  response.cookies.set("oauth_nonce", "", { maxAge: 0, path: "/" });
-  return response;
+  return NextResponse.redirect(new URL("/dashboard?drive=connected", appBase));
 }
