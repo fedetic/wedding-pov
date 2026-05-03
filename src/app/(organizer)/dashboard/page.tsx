@@ -33,7 +33,7 @@ export default async function DashboardPage({
   const driveConnected = !!tokenRow;
 
   return (
-    <main className="min-h-screen p-8 max-w-2xl mx-auto">
+    <main className="min-h-screen px-4 py-6 sm:p-8 max-w-2xl mx-auto">
       <div className="flex justify-between items-baseline mb-2">
         <h1 className="text-2xl font-semibold">
           Welcome, {session.user.name}

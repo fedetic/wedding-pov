@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { EventRow, EventData } from "./EventRow";
+import { EventCard } from "./EventCard";
 
 type Props = { initialEvents: EventData[] };
 
@@ -32,36 +33,33 @@ export function EventListClient({ initialEvents }: Props) {
           {toggleError}
         </div>
       )}
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="bg-gray-50">
-            <th className="text-left text-sm font-semibold text-gray-500 uppercase tracking-wide px-4 py-2">
-              Name
-            </th>
-            <th className="text-left text-sm font-semibold text-gray-500 uppercase tracking-wide px-4 py-2">
-              Created
-            </th>
-            <th className="text-left text-sm font-semibold text-gray-500 uppercase tracking-wide px-4 py-2 w-28">
-              Status
-            </th>
-            <th className="text-left text-sm font-semibold text-gray-500 uppercase tracking-wide px-4 py-2">
-              Actions
-            </th>
-            <th className="text-left text-sm font-semibold text-gray-500 uppercase tracking-wide px-4 py-2">
-              Edit
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {initialEvents.map((event) => (
-            <EventRow
-              key={event.id}
-              event={event}
-              onToggleError={setToggleError}
-            />
-          ))}
-        </tbody>
-      </table>
+
+      {/* Mobile: stacked cards */}
+      <div className="flex flex-col gap-3 md:hidden">
+        {initialEvents.map((event) => (
+          <EventCard key={event.id} event={event} />
+        ))}
+      </div>
+
+      {/* Desktop: table */}
+      <div className="hidden md:block">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="bg-gray-50">
+              <th className="text-left text-sm font-semibold text-gray-500 uppercase tracking-wide px-4 py-2">Name</th>
+              <th className="text-left text-sm font-semibold text-gray-500 uppercase tracking-wide px-4 py-2">Created</th>
+              <th className="text-left text-sm font-semibold text-gray-500 uppercase tracking-wide px-4 py-2 w-28">Status</th>
+              <th className="text-left text-sm font-semibold text-gray-500 uppercase tracking-wide px-4 py-2">Actions</th>
+              <th className="text-left text-sm font-semibold text-gray-500 uppercase tracking-wide px-4 py-2">Edit</th>
+            </tr>
+          </thead>
+          <tbody>
+            {initialEvents.map((event) => (
+              <EventRow key={event.id} event={event} onToggleError={setToggleError} />
+            ))}
+          </tbody>
+        </table>
+      </div>
     </>
   );
 }

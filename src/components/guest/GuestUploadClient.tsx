@@ -382,8 +382,11 @@ export function GuestUploadClient({ eventSlug, eventName, photoLimit }: Props) {
           <h2 className="text-3xl font-semibold text-[#1a1a1a] mb-2">
             You&apos;re all done!
           </h2>
-          <p className="text-base text-[#6b7280]">
+          <p className="text-base text-[#6b7280] mb-4">
             {doneCount} {photoWord} uploaded to {eventName}
+          </p>
+          <p className="text-base text-[#1a1a1a] font-medium">
+            Thank you for attending our special day! 💑
           </p>
         </div>
       </div>
