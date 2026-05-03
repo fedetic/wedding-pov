@@ -12,6 +12,7 @@ interface UploadParams {
   fileName: string;
   mimeType: string;
   buffer: ArrayBuffer;
+  guestNickname: string;
 }
 
 interface UploadResult {
@@ -34,6 +35,7 @@ export async function uploadFileToDrive({
   fileName,
   mimeType,
   buffer,
+  guestNickname,
 }: UploadParams): Promise<UploadResult> {
   // ── 1. Load organizer's Google tokens from DB ─────────────────────────────
   const [tokenRow] = await db
@@ -81,15 +83,21 @@ export async function uploadFileToDrive({
       .where(eq(googleTokens.userId, organizerId));
   });
 
-  // ── 5. HEIC/HEIF detection and conversion ──────────────────────────────────
+  // ── 5. Prefix filename with guest nickname ─────────────────────────────────
+  // Keeps the Drive folder flat (browsable in one view) while showing who uploaded each photo.
+  // Sanitize nickname: replace whitespace runs with underscores, strip non-word chars.
+  const safeNickname = guestNickname.trim().replace(/\s+/g, "_").replace(/[^\w-]/g, "");
+  const prefixedFileName = safeNickname ? `${safeNickname}_${fileName}` : fileName;
+
+  // ── 6. HEIC/HEIF detection and conversion ──────────────────────────────────
   const isHeic =
     mimeType === "image/heic" ||
     mimeType === "image/heif" ||
-    fileName.toLowerCase().endsWith(".heic") ||
-    fileName.toLowerCase().endsWith(".heif");
+    prefixedFileName.toLowerCase().endsWith(".heic") ||
+    prefixedFileName.toLowerCase().endsWith(".heif");
 
   let finalMimeType = mimeType;
-  let finalFileName = fileName;
+  let finalFileName = prefixedFileName;
   let uploadBuffer: ArrayBuffer = buffer;
 
   if (isHeic) {
@@ -101,14 +109,14 @@ export async function uploadFileToDrive({
     uploadBuffer = converted;
     finalMimeType = "image/jpeg";
     // Replace .heic / .heif extension (case-insensitive) with .jpg
-    finalFileName = fileName.replace(/\.(heic|heif)$/i, ".jpg");
+    finalFileName = prefixedFileName.replace(/\.(heic|heif)$/i, ".jpg");
     // If the file had no recognized extension, just append .jpg
-    if (finalFileName === fileName) {
-      finalFileName = `${fileName}.jpg`;
+    if (finalFileName === prefixedFileName) {
+      finalFileName = `${prefixedFileName}.jpg`;
     }
   }
 
-  // ── 6. Upload to Google Drive ──────────────────────────────────────────────
+  // ── 7. Upload to Google Drive ──────────────────────────────────────────────
   const drive = google.drive({ version: "v3", auth: oauth2Client });
 
   const response = await drive.files.create({

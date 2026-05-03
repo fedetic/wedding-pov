@@ -109,6 +109,7 @@ export async function POST(
       fileName: fileEntry.name,
       mimeType: fileEntry.type,
       buffer: await fileEntry.arrayBuffer(),
+      guestNickname: nickname,
     });
     driveFileId = result.driveFileId;
     finalFileName = result.finalFileName;
