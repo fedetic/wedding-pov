@@ -50,21 +50,23 @@ export function EventRow({ event, onToggleError }: Props) {
           {event.createdAt.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })}
         </td>
         <td className="px-4 py-3 text-sm text-center text-gray-500">{event.photoLimit}</td>
-        {/* Status column is now the toggle */}
+        {/* Status column — toggle switch */}
         <td className="px-4 py-3 w-32">
           <button
             type="button"
+            role="switch"
+            aria-checked={isActive}
             onClick={handleToggle}
             disabled={saving}
-            className={`inline-flex items-center px-2 py-0.5 rounded-full text-sm font-semibold transition-colors ${
-              saving
-                ? "opacity-50 cursor-not-allowed bg-gray-100 text-gray-400"
-                : isActive
-                ? "bg-green-100 text-green-800 hover:bg-red-100 hover:text-red-700 cursor-pointer"
-                : "bg-gray-100 text-gray-600 hover:bg-green-100 hover:text-green-800 cursor-pointer"
-            }`}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
+              saving ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+            } ${isActive ? "bg-green-500" : "bg-gray-300"}`}
           >
-            {saving ? "Saving…" : isActive ? "Active" : "Inactive"}
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                isActive ? "translate-x-6" : "translate-x-1"
+              }`}
+            />
           </button>
         </td>
         <td className="px-4 py-3 text-sm">
