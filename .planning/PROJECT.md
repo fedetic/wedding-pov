@@ -1,5 +1,16 @@
 # Wedding POV — Event Photo Upload via QR Code
 
+## Current State
+
+**Version:** v1.0 — SHIPPED 2026-05-04
+**Status:** Live on Railway — ready for real-world use
+
+The app is complete and wedding-ready. Organizers can sign up, connect Google Drive, create events with QR codes, and guests can scan → enter nickname → upload photos (including HEIC from iPhone) directly to Drive. OAuth is Production-verified (non-expiring refresh tokens). Full flow confirmed on iPhone iOS Safari.
+
+**Live URL:** Railway deployment (see `.env` / Railway dashboard for URL)
+
+---
+
 ## What This Is
 
 A web app that lets event organizers generate a QR code guests can scan to upload their personal photos directly to the organizer's Google Drive. No app install required for guests — they scan, enter a nickname, pick photos, and upload. Built first for a personal wedding, architected to scale into a multi-tenant SaaS where anyone can create their own events.
@@ -58,11 +69,15 @@ Guests can share their POV photos at an event with zero friction — scan, name,
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Web app over native mobile | Zero install for guests; QR → browser is the smoothest path | — Pending |
-| Google Drive as storage | Organizer already owns the photos in a familiar place; no extra storage cost | — Pending |
-| Flat Drive folder per event | Simplest structure; guest subfolders add complexity with little benefit | — Pending |
-| Multi-tenant architecture from v1 | SaaS generalization later requires no rewrite; marginal added cost upfront | — Pending |
-| Email/password for organizers | Simple to ship; OAuth for organizers is just Drive connection, not login | — Pending |
+| Web app over native mobile | Zero install for guests; QR → browser is the smoothest path | ✅ Validated |
+| Google Drive as storage | Organizer already owns the photos in a familiar place; no extra storage cost | ✅ Validated |
+| Flat Drive folder per event | Simplest structure; guest subfolders add complexity with little benefit | ✅ Validated |
+| Multi-tenant architecture from v1 | SaaS generalization later requires no rewrite; marginal added cost upfront | ✅ Validated |
+| Email/password for organizers | Simple to ship; OAuth for organizers is just Drive connection, not login | ✅ Validated |
+| Railway over Vercel | 4.5 MB Vercel body limit blocks photo uploads; Railway has no such limit | ✅ Validated |
+| Better Auth + Drizzle adapter | DB-backed sessions; avoids NextAuth JWT complexity | ✅ Validated |
+| Server-brokered Drive upload | Drive tokens never reach guest browser; security requirement met | ✅ Validated |
+| `drive.file` scope only | Avoids weeks-long Google security review for full `drive` scope | ✅ Validated |
 
 ## Evolution
 
@@ -82,4 +97,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-02 after initialization*
+*Last updated: 2026-05-04 — v1.0 shipped*
