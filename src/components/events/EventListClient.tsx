@@ -41,14 +41,14 @@ export function EventListClient({ initialEvents }: Props) {
             <th className="text-left text-sm font-semibold text-gray-500 uppercase tracking-wide px-4 py-2">
               Created
             </th>
-            <th className="text-left text-sm font-semibold text-gray-500 uppercase tracking-wide px-4 py-2 w-20">
-              Limit
-            </th>
-            <th className="text-left text-sm font-semibold text-gray-500 uppercase tracking-wide px-4 py-2 w-32">
+            <th className="text-left text-sm font-semibold text-gray-500 uppercase tracking-wide px-4 py-2 w-28">
               Status
             </th>
             <th className="text-left text-sm font-semibold text-gray-500 uppercase tracking-wide px-4 py-2">
               Actions
+            </th>
+            <th className="text-left text-sm font-semibold text-gray-500 uppercase tracking-wide px-4 py-2">
+              Edit
             </th>
           </tr>
         </thead>
