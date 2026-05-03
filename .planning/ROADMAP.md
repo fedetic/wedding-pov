@@ -78,7 +78,11 @@ Plans:
   2. Full guest flow (scan → nickname → select photos → upload → confirmation) works on an actual iPhone (iOS Safari) and Android phone (Chrome)
   3. Photos from the test run appear in Drive with correct guest name attribution and no corruption
   4. Inactive events correctly reject upload attempts with a clear error message
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 04-01-PLAN.md — GCP OAuth Production promotion + Drive reconnect + token auto-refresh verification
+- [ ] 04-02-PLAN.md — End-to-end smoke test on iPhone + Android + inactive event rejection + Drive attribution audit
 
 ## Progress
 
