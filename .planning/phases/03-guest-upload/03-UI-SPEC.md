@@ -1,7 +1,7 @@
 ---
 phase: 3
 slug: guest-upload
-status: draft
+status: approved
 shadcn_initialized: false
 preset: none
 created: 2025-05-03
@@ -42,7 +42,10 @@ Same 8-point grid as Phase 2. Mobile-first exceptions declared explicitly.
 | 2xl | 48px | `py-12` | Page vertical padding (top and bottom) |
 | 3xl | 64px | not used this phase | Reserved |
 
-**Exceptions (mobile-first):**
+**Typography exceptions:**
+- Completion emoji: `text-6xl` — purely decorative/pictographic, not a text role; not part of the type scale
+
+**Spacing exceptions (mobile-first):**
 - Primary CTA button: `min-h-[56px]` (56px) — large touch target; the most critical interaction element
 - Text inputs: `min-h-[52px]` (52px) — comfortable touch entry on iOS Safari
 - All interactive elements: `min-h-[44px]` absolute floor — non-negotiable for mobile accessibility (WCAG 2.5.5)
@@ -126,13 +129,13 @@ Shown during Steps 1, 2, and 3. Hidden on the completion screen and error screen
 ```
 ┌────────────────────────────────────────┐
 │                                        │
-│      Sarah & John's Wedding            │  text-xl font-semibold text-center text-gray-800
+│      Sarah & John's Wedding            │  text-3xl font-semibold text-center text-gray-800
 │           ────                         │  2px solid #b85c52, 32px wide, mx-auto, mt-2 mb-8
 │                                        │
 └────────────────────────────────────────┘
 ```
 
-- Event name: `<h1 className="text-xl font-semibold text-center text-gray-800">{event.name}</h1>`
+- Event name: `<h1 className="text-3xl font-semibold text-center text-gray-800">{event.name}</h1>`
 - Accent rule: `<div className="w-8 h-[2px] bg-[#b85c52] mx-auto mt-2 mb-8" />`
 
 ---
@@ -155,7 +158,7 @@ Shown during Steps 1, 2, and 3. Hidden on the completion screen and error screen
 │                                        │  text-base font-normal mt-4
 │  ┌──────────────────────────────────┐  │
 │  │         Continue →               │  │  <button> min-h-[56px] rounded-xl mt-4
-│  └──────────────────────────────────┘  │  bg-[#b85c52] text-white font-semibold text-lg
+│  └──────────────────────────────────┘  │  bg-[#b85c52] text-white font-semibold text-base
 │                                        │  w-full — full width button
 │  [inline error when empty-submitted]   │  text-sm text-red-600 mt-2
 └────────────────────────────────────────┘
@@ -188,7 +191,7 @@ Shown during Steps 1, 2, and 3. Hidden on the completion screen and error screen
 │                                        │
 │  ┌──────────────────────────────────┐  │
 │  │         Select photos            │  │  <button> min-h-[56px] rounded-xl mt-6
-│  └──────────────────────────────────┘  │  bg-[#b85c52] text-white font-semibold text-lg w-full
+│  └──────────────────────────────────┘  │  bg-[#b85c52] text-white font-semibold text-base w-full
 │                                        │
 │  [hidden file input — sr-only]         │
 └────────────────────────────────────────┘
@@ -237,7 +240,7 @@ Shown during Steps 1, 2, and 3. Hidden on the completion screen and error screen
 │                                        │
 │  ┌──────────────────────────────────┐  │
 │  │     Upload 5 photos →            │  │  primary CTA min-h-[56px] bg-[#b85c52]
-│  └──────────────────────────────────┘  │  w-full rounded-xl font-semibold text-lg mt-4
+│  └──────────────────────────────────┘  │  w-full rounded-xl font-semibold text-base mt-4
 └────────────────────────────────────────┘
 ```
 
@@ -334,7 +337,7 @@ Shown during Steps 1, 2, and 3. Hidden on the completion screen and error screen
 ```
 ┌────────────────────────────────────────┐
 │                                        │
-│  This event isn't accepting            │  text-2xl font-semibold text-center mt-8
+│  This event isn't accepting            │  text-3xl font-semibold text-center mt-8
 │  photos right now.                     │
 │                                        │
 │  Check with the event organizer.       │  text-base text-center text-gray-500 mt-3
@@ -351,7 +354,7 @@ Rendered server-side — no JavaScript required. No retry CTA (organizer must re
 ```
 ┌────────────────────────────────────────┐
 │                                        │
-│  This link isn't valid or              │  text-2xl font-semibold text-center mt-8
+│  This link isn't valid or              │  text-3xl font-semibold text-center mt-8
 │  may have expired.                     │
 │                                        │
 │  Double-check the QR code and          │  text-base text-center text-gray-500 mt-3
@@ -369,7 +372,7 @@ Rendered server-side (404 state). No retry CTA.
 ```
 ┌────────────────────────────────────────┐
 │                                        │
-│  Something went wrong.                 │  text-2xl font-semibold text-center mt-8
+│  Something went wrong.                 │  text-3xl font-semibold text-center mt-8
 │                                        │
 │  Your photos couldn't be uploaded.     │  text-base text-center text-gray-500 mt-3
 │  Check your connection and try again.  │
