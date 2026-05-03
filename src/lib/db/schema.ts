@@ -4,6 +4,7 @@ import {
   timestamp,
   boolean,
   integer,
+  index,
 } from "drizzle-orm/pg-core";
 
 // ── Better Auth managed tables ────────────────────────────────────────────────
@@ -89,18 +90,22 @@ export const events = pgTable("events", {
 });
 
 // Phase 3 stub — created now for schema completeness
-export const uploadRecords = pgTable("upload_records", {
-  id: text("id").primaryKey(),
-  eventId: text("event_id")
-    .notNull()
-    .references(() => events.id, { onDelete: "cascade" }),
-  organizerId: text("organizer_id").notNull(),
-  guestNickname: text("guest_nickname").notNull(),
-  fileName: text("file_name").notNull(),
-  mimeType: text("mime_type").notNull(),
-  fileSizeBytes: integer("file_size_bytes"),
-  driveFileId: text("drive_file_id"),
-  status: text("status").notNull().default("pending"),
-  initiatedAt: timestamp("initiated_at").notNull().defaultNow(),
-  confirmedAt: timestamp("confirmed_at"),
-});
+export const uploadRecords = pgTable(
+  "upload_records",
+  {
+    id: text("id").primaryKey(),
+    eventId: text("event_id")
+      .notNull()
+      .references(() => events.id, { onDelete: "cascade" }),
+    organizerId: text("organizer_id").notNull(),
+    guestNickname: text("guest_nickname").notNull(),
+    fileName: text("file_name").notNull(),
+    mimeType: text("mime_type").notNull(),
+    fileSizeBytes: integer("file_size_bytes"),
+    driveFileId: text("drive_file_id"),
+    status: text("status").notNull().default("pending"),
+    initiatedAt: timestamp("initiated_at").notNull().defaultNow(),
+    confirmedAt: timestamp("confirmed_at"),
+  },
+  (t) => [index("upload_records_event_id_idx").on(t.eventId)],
+);
