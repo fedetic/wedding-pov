@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2025-05-02)
 
 **Core value:** Guests can share their POV photos at an event with zero friction — scan, name, upload, done.
-**Current focus:** Phase 3 — Guest Upload
+**Current focus:** ✅ ALL PHASES COMPLETE — Project shipped
 
 ## Current Position
 
-Phase: 3 of 4 (Guest Upload)
-Plan: 3 of 3 in current phase (03-01, 03-02 complete)
-Status: In progress
-Last activity: 2026-05-03 — 03-02 complete: guest upload page + 4-step XHR state machine UI
+Phase: 4 of 4 (Launch Readiness)
+Plan: 2 of 2 in current phase (04-01, 04-02 complete)
+Status: **COMPLETE** — all 4 phases shipped
+Last activity: 2026-05-04 — confirmed all phases complete (03-03, 04-01, 04-02 all verified)
 
-Progress: [█████████░] ~85%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -53,8 +53,8 @@ None yet.
 
 ### Blockers/Concerns
 
-- **OAuth risk**: GCP app must be promoted to Production before launch; Testing mode causes refresh token expiry every 7 days — catastrophic on a wedding day. Flag for Phase 4.
-- **OAuth risk**: Must request `drive.file` scope, NOT `drive` scope. Wrong scope = weeks-long security review.
+- ~~**OAuth risk**: GCP app must be promoted to Production before launch~~ — **RESOLVED in Phase 4** (Production status confirmed, refresh tokens non-expiring)
+- ~~**OAuth risk**: Must request `drive.file` scope~~ — **RESOLVED** (correct scope used throughout)
 
 ## Deferred Items
 
@@ -68,6 +68,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-03
-Stopped at: 03-02 complete — guest upload page + 4-step XHR state machine UI (37ee605)
+Last session: 2026-05-04
+Stopped at: All 4 phases complete — project shipped 🎉
 Resume file: None
