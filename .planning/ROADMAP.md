@@ -47,7 +47,13 @@ Plans:
   3. Organizer can toggle an event active or inactive — inactive events will reject guest uploads
   4. Organizer can download a print-ready PNG QR code for any event
   5. Scanning the QR code opens the correct `/e/[slug]` upload page URL in a mobile browser
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+- [ ] 02-01-PLAN.md — Backend: install deps (qrcode, nanoid), createEvent Server Action (Drive folder + DB insert + slug), PATCH toggle API route
+- [ ] 02-02-PLAN.md — Dashboard UI: EventList (Server Component), EventRow (optimistic toggle), CreateEventForm, /dashboard/events/new page, update dashboard
+- [ ] 02-03-PLAN.md — QR feature: QRModal component (256px QR generation, PNG download), wire into EventRow
+
 **UI hint**: yes
 
 ### Phase 3: Guest Upload
