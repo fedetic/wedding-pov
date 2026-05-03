@@ -11,10 +11,14 @@ export async function GET(request: NextRequest) {
   const userId = searchParams.get("state"); // set in connect route
   const error = searchParams.get("error");
 
+  // Use BETTER_AUTH_URL as the base for all redirects — request.url may be an
+  // internal Railway IP that the user's browser cannot reach.
+  const appBase = process.env.BETTER_AUTH_URL!;
+
   // Handle user-denied or error from Google
   if (error || !code || !userId) {
     console.error("[drive/callback] OAuth error or missing params:", { error, hasCode: !!code, hasUserId: !!userId });
-    return NextResponse.redirect(new URL("/dashboard?drive=error", request.url));
+    return NextResponse.redirect(new URL("/dashboard?drive=error", appBase));
   }
 
   const oauth2Client = new google.auth.OAuth2(
@@ -29,7 +33,7 @@ export async function GET(request: NextRequest) {
     tokens = result.tokens;
   } catch (e) {
     console.error("[drive/callback] Token exchange failed:", e);
-    return NextResponse.redirect(new URL("/dashboard?drive=error", request.url));
+    return NextResponse.redirect(new URL("/dashboard?drive=error", appBase));
   }
 
   // CRITICAL: assert refresh_token is present
@@ -37,8 +41,7 @@ export async function GET(request: NextRequest) {
   // connected and the token wasn't stored. Re-trigger with forced consent.
   if (!tokens.refresh_token) {
     console.warn("[drive/callback] refresh_token is null — re-triggering consent flow");
-    const retryUrl = new URL("/api/drive/connect", request.url);
-    return NextResponse.redirect(retryUrl);
+    return NextResponse.redirect(new URL("/api/drive/connect", appBase));
   }
 
   // Encrypt the refresh token before storing — AES-256-GCM via ENCRYPTION_KEY
@@ -69,5 +72,5 @@ export async function GET(request: NextRequest) {
     });
 
   console.info("[drive/callback] Drive connected for userId:", userId);
-  return NextResponse.redirect(new URL("/dashboard?drive=connected", request.url));
+  return NextResponse.redirect(new URL("/dashboard?drive=connected", appBase));
 }
