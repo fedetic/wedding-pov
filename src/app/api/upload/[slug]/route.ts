@@ -4,7 +4,7 @@ import { uploadRateLimiter } from "@/lib/rate-limiter";
 import { uploadFileToDrive } from "@/lib/drive-upload";
 import { db } from "@/lib/db";
 import { events, uploadRecords } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
 
 const MAX_FILE_BYTES = 10_000_000; // 10 MB
@@ -97,7 +97,23 @@ export async function POST(
     );
   }
 
-  // ── 5. Upload to Google Drive ───────────────────────────────────────────────
+  // ── 5. Enforce photo limit server-side ─────────────────────────────────────
+  const [{ count }] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(uploadRecords)
+    .where(and(
+      eq(uploadRecords.eventId, event.id),
+      eq(uploadRecords.guestNickname, nickname),
+    ));
+
+  if (count >= event.photoLimit) {
+    return NextResponse.json(
+      { error: `Photo limit of ${event.photoLimit} reached for this nickname.` },
+      { status: 422 },
+    );
+  }
+
+  // ── 6. Upload to Google Drive ───────────────────────────────────────────────
   let driveFileId: string;
   let finalFileName: string;
   let finalMimeType: string;
@@ -122,7 +138,7 @@ export async function POST(
     );
   }
 
-  // ── 6. Persist upload record ────────────────────────────────────────────────
+  // ── 7. Persist upload record ────────────────────────────────────────────────
   try {
     await db.insert(uploadRecords).values({
       id: nanoid(),
@@ -142,6 +158,6 @@ export async function POST(
     console.error("[upload] Failed to insert upload record:", err);
   }
 
-  // ── 7. Return success — never include token data ────────────────────────────
+  // ── 8. Return success — never include token data ────────────────────────────
   return NextResponse.json({ driveFileId, fileName: finalFileName });
 }
