@@ -14,7 +14,7 @@ function EventNotFound() {
       <div className="bg-white rounded-2xl shadow p-8 max-w-md w-full text-center">
         <h1 className="text-3xl font-semibold text-[#1a1a1a] mb-4">Event not found</h1>
         <p className="text-base text-[#6b7280]">
-          This QR code may be expired or invalid. Ask the event organiser for a new link.
+          This link is not recognised. The event may have been removed — ask the organiser for help.
         </p>
       </div>
     </main>

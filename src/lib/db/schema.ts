@@ -82,7 +82,7 @@ export const events = pgTable("events", {
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
-  slug: text("slug").notNull().unique(),
+  slug: text("slug").notNull().unique(), // immutable after creation — QR codes depend on this
   photoLimit: integer("photo_limit").notNull().default(20),
   isActive: boolean("is_active").notNull().default(true),
   driveFolderId: text("drive_folder_id"),
