@@ -86,6 +86,7 @@ export const events = pgTable("events", {
   photoLimit: integer("photo_limit").notNull().default(20),
   isActive: boolean("is_active").notNull().default(true),
   driveFolderId: text("drive_folder_id"),
+  thankYouMessage: text("thank_you_message"), // optional custom message shown to guests after upload
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

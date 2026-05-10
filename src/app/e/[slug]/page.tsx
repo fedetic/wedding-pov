@@ -66,6 +66,7 @@ export default async function GuestUploadPage({
         eventSlug={event.slug}
         eventName={event.name}
         photoLimit={event.photoLimit}
+        thankYouMessage={event.thankYouMessage ?? null}
       />
     </main>
   );

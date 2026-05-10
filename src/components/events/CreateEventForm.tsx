@@ -9,6 +9,7 @@ export function CreateEventForm() {
   const [name, setName] = useState("");
   const [photoLimit, setPhotoLimit] = useState(30);
   const [isActive, setIsActive] = useState(true);
+  const [thankYouMessage, setThankYouMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -17,7 +18,7 @@ export function CreateEventForm() {
     setSubmitting(true);
     setError(null);
 
-    const result = await createEvent({ name, photoLimit, isActive });
+    const result = await createEvent({ name, photoLimit, isActive, thankYouMessage });
 
     if (!result.success) {
       setError(result.error);
@@ -86,6 +87,28 @@ export function CreateEventForm() {
             Guests can upload photos to active events.
           </p>
         </div>
+      </div>
+
+      <div>
+        <label
+          htmlFor="thank-you-message"
+          className="block text-sm font-semibold mb-1"
+        >
+          Thank-you message{" "}
+          <span className="text-gray-400 font-normal">(optional)</span>
+        </label>
+        <textarea
+          id="thank-you-message"
+          maxLength={500}
+          rows={3}
+          value={thankYouMessage}
+          onChange={(e) => setThankYouMessage(e.target.value)}
+          placeholder="e.g. Thank you so much for celebrating with us! 💑"
+          className="border border-gray-300 rounded px-3 py-2 w-full text-base outline-none focus:ring-2 focus:ring-black focus:ring-offset-1 resize-none"
+        />
+        <p className="text-sm text-gray-500 mt-1">
+          Shown to guests after they successfully upload photos. Leave blank to use the default message.
+        </p>
       </div>
 
       <button

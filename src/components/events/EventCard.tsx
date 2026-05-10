@@ -12,6 +12,7 @@ export function EventCard({ event }: Props) {
   const {
     isActive, setIsActive,
     photoLimit, setPhotoLimit,
+    thankYouMessage, setThankYouMessage,
     showQR, setShowQR,
     showEdit, setShowEdit,
     showHistory, setShowHistory,
@@ -48,8 +49,8 @@ export function EventCard({ event }: Props) {
       {showHistory && <HistoryModal event={{ id: event.id, name: event.name }} onClose={() => setShowHistory(false)} />}
       {showEdit && (
         <EditEventModal
-          event={{ id: event.id, name: event.name, isActive, photoLimit }}
-          onSave={({ isActive: a, photoLimit: l }) => { setIsActive(a); setPhotoLimit(l); }}
+          event={{ id: event.id, name: event.name, isActive, photoLimit, thankYouMessage }}
+          onSave={({ isActive: a, photoLimit: l, thankYouMessage: m }) => { setIsActive(a); setPhotoLimit(l); setThankYouMessage(m); }}
           onClose={() => setShowEdit(false)}
         />
       )}

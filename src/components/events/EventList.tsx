@@ -15,6 +15,7 @@ export async function EventList({ userId }: Props) {
       isActive: events.isActive,
       createdAt: events.createdAt,
       driveFolderId: events.driveFolderId,
+      thankYouMessage: events.thankYouMessage,
     })
     .from(events)
     .where(eq(events.organizerId, userId))

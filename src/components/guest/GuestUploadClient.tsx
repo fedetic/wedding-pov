@@ -6,6 +6,7 @@ interface Props {
   eventSlug: string;
   eventName: string;
   photoLimit: number;
+  thankYouMessage: string | null;
 }
 
 type Step = 'landing' | 'select' | 'upload' | 'complete' | 'error';
@@ -18,7 +19,7 @@ interface PhotoState {
   previewUrl?: string;
 }
 
-export function GuestUploadClient({ eventSlug, eventName, photoLimit }: Props) {
+export function GuestUploadClient({ eventSlug, eventName, photoLimit, thankYouMessage }: Props) {
   const [step, setStep] = useState<Step>('landing');
   const [nickname, setNickname] = useState('');
   const [photos, setPhotos] = useState<PhotoState[]>([]);
@@ -386,7 +387,7 @@ export function GuestUploadClient({ eventSlug, eventName, photoLimit }: Props) {
             {doneCount} {photoWord} uploaded to {eventName}
           </p>
           <p className="text-base text-[#1a1a1a] font-medium">
-            Thank you for attending our special day! 💑
+            {thankYouMessage ?? "Thank you for attending our special day! 💑"}
           </p>
         </div>
       </div>

@@ -28,6 +28,7 @@ export async function createEvent(formData: {
   name: string;
   photoLimit: number;
   isActive: boolean;
+  thankYouMessage?: string;
 }): Promise<{ success: true; slug: string } | { success: false; error: string }> {
   // 1. Auth check
   const session = await auth.api.getSession({ headers: await headers() });
@@ -93,6 +94,7 @@ export async function createEvent(formData: {
 
   // 5. Generate slug and insert event row
   const slug = generateSlug(name);
+  const thankYouMessage = formData.thankYouMessage?.trim() || null;
   try {
     await db.insert(events).values({
       id: randomUUID(),
@@ -102,6 +104,7 @@ export async function createEvent(formData: {
       photoLimit,
       isActive: formData.isActive,
       driveFolderId,
+      thankYouMessage,
     });
   } catch (e) {
     console.error("[createEvent] DB insert failed:", e);
