@@ -5,33 +5,32 @@
 See: .planning/PROJECT.md (updated 2026-05-17)
 
 **Core value:** Guests can share their POV photos at an event with zero friction — scan, name, upload, done.
-**Current focus:** v1.1 Mobile App — Capacitor native app for organizers
+**Current focus:** v1.1 Mobile App — Phase 5: Capacitor Infrastructure
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements for v1.1 Mobile App
-Last activity: 2026-05-17 — Milestone v1.1 started
+Phase: 5 of 8 (Capacitor Infrastructure)
+Plan: — (not yet planned)
+Status: Ready to plan
+Last activity: 2026-05-17 — v1.1 roadmap created (Phases 5–8)
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [░░░░░░░░░░] 0% (v1.1)
 
 ## Performance Metrics
 
-**Velocity:**
-- **Total plans completed: 2** (03-01, 03-02)
+**Velocity (v1.0):**
+- Total plans completed: 12
 - Average duration: ~3 minutes
-- Total execution time: ~6 minutes
+- Total execution time: ~36 minutes
 
-**By Phase:**
+**By Phase (v1.0):**
 
-| Phase | Plans | Total | Avg/Plan |
-|-------|-------|-------|----------|
-| - | - | - | - |
-
-**Recent Trend:**
-- Last 5 plans: —
-- Trend: —
+| Phase | Plans | Avg/Plan |
+|-------|-------|----------|
+| 1. Foundation + Auth | 4 | ~3 min |
+| 2. Events + QR | 3 | ~3 min |
+| 3. Guest Upload | 3 | ~3 min |
+| 4. Launch Readiness | 2 | ~3 min |
 
 *Updated after each plan completion*
 
@@ -39,13 +38,10 @@ Progress: [░░░░░░░░░░] 0%
 
 ### Decisions
 
-Decisions are logged in PROJECT.md Key Decisions table.
-Recent decisions affecting current work:
-
-- [Planning]: Railway (not Vercel) — 4.5 MB Vercel body limit blocks photo uploads
-- [Planning]: Better Auth — DB-backed sessions, Drizzle adapter, avoids NextAuth JWT complexity
-- [Planning]: Server-brokered resumable upload — Drive tokens never reach guest browser; guest PUTs bytes directly to Google CDN
-- [Planning]: `drive.file` scope (not `drive`) — wrong scope triggers weeks-long Google security review
+- [v1.0]: Railway (not Vercel) — 4.5 MB body limit blocks photo uploads
+- [v1.0]: `drive.file` scope (not `drive`) — avoids weeks-long Google security review
+- [v1.1 Research]: `server.url` pointing to Railway (not static export) — Server Actions, cookies(), and auth middleware are incompatible with `output: 'export'`
+- [v1.1 Research]: Google Drive OAuth must open via `@capacitor/browser` (SFSafariViewController/Chrome Custom Tabs) — WKWebView triggers `disallowed_useragent` rejection
 
 ### Pending Todos
 
@@ -53,23 +49,22 @@ None yet.
 
 ### Blockers/Concerns
 
-- ~~**OAuth risk**: GCP app must be promoted to Production before launch~~ — **RESOLVED in Phase 4** (Production status confirmed, refresh tokens non-expiring)
-- ~~**OAuth risk**: Must request `drive.file` scope~~ — **RESOLVED** (correct scope used throughout)
+- **CAP-03 (CORS)**: `capacitor://localhost` and `http://localhost` must be added to Railway CORS allowlist before any API calls work — Phase 5 blocker
+- **CAP-05 (OAuth)**: WKWebView blocks Google OAuth — must validate `@capacitor/browser` flow on real device (emulator may not reproduce)
+- **CAP-04 (cookies)**: iOS ITP may block Better Auth HTTP-only cookies cross-origin — must validate on real device in Phase 5 before building on top
+- **NATIVE-03 (deep links)**: Requires serving `apple-app-site-association` and `assetlinks.json` from Railway + Apple Developer portal configuration — coordinate with Phase 6
+- **App Store 4.2 risk**: Pure webview wrapper can be rejected for minimum functionality — QR share sheet (NATIVE-01) + biometrics (NATIVE-02) are the mitigation
 
 ## Deferred Items
 
 | Category | Item | Status | Deferred At |
 |----------|------|--------|-------------|
-| Auth | Organizer log out | ✅ Shipped (post-v1.0) | Planning |
-| Auth | Disconnect / reconnect Drive | ✅ Shipped (post-v1.0) | Planning |
-| Guest | Retry failed individual photo | ✅ Shipped (post-v1.0) | Planning |
-| Organizer | In-app upload history per event | ✅ Shipped (post-v1.0) | Planning |
-| Event | Shareable event link (URL alongside QR) | ✅ Shipped (post-v1.0) | Planning |
-| Organizer | Email notifications when photos are uploaded | Future | v1.0 planning |
-| Event | Custom event branding (logo, color) on guest page | Future | v1.0 planning |
+| Notifications | Push notifications when guest uploads (NOTIF-01, NOTIF-02) | v2 | v1.1 planning |
+| Organizer | Email notifications on upload (ORG-01) | v2 | v1.1 planning |
+| Organizer | Custom event branding (ORG-02) | v2 | v1.1 planning |
 
 ## Session Continuity
 
-Last session: 2026-05-04
-Stopped at: All 4 phases complete — project shipped 🎉
+Last session: 2026-05-17
+Stopped at: v1.1 roadmap created — ready to plan Phase 5
 Resume file: None

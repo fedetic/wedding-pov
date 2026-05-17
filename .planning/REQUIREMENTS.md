@@ -79,36 +79,34 @@ Items acknowledged but not in scope for v1.1.
 
 ## Traceability
 
-*Updated during roadmap creation.*
-
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CAP-01 | — | Pending |
-| CAP-02 | — | Pending |
-| CAP-03 | — | Pending |
-| CAP-04 | — | Pending |
-| CAP-05 | — | Pending |
-| NATIVE-01 | — | Pending |
-| NATIVE-02 | — | Pending |
-| NATIVE-03 | — | Pending |
-| NATIVE-04 | — | Pending |
-| COMPLY-01 | — | Pending |
-| COMPLY-02 | — | Pending |
-| COMPLY-03 | — | Pending |
-| COMPLY-04 | — | Pending |
-| COMPLY-05 | — | Pending |
-| COMPLY-06 | — | Pending |
-| DIST-01 | — | Pending |
-| DIST-02 | — | Pending |
-| DIST-03 | — | Pending |
-| DIST-04 | — | Pending |
+| CAP-01 | Phase 5 | Pending |
+| CAP-02 | Phase 5 | Pending |
+| CAP-03 | Phase 5 | Pending |
+| CAP-04 | Phase 5 | Pending |
+| CAP-05 | Phase 5 | Pending |
+| NATIVE-01 | Phase 6 | Pending |
+| NATIVE-02 | Phase 6 | Pending |
+| NATIVE-03 | Phase 6 | Pending |
+| NATIVE-04 | Phase 6 | Pending |
+| COMPLY-01 | Phase 7 | Pending |
+| COMPLY-02 | Phase 7 | Pending |
+| COMPLY-03 | Phase 7 | Pending |
+| COMPLY-04 | Phase 7 | Pending |
+| COMPLY-05 | Phase 7 | Pending |
+| COMPLY-06 | Phase 7 | Pending |
+| DIST-01 | Phase 8 | Pending |
+| DIST-02 | Phase 8 | Pending |
+| DIST-03 | Phase 8 | Pending |
+| DIST-04 | Phase 8 | Pending |
 
 **Coverage:**
 - v1.1 requirements: 19 total
-- Mapped to phases: 0 (pending roadmap)
-- Unmapped: 19 ⚠️
+- Mapped to phases: 19 ✓
+- Unmapped: 0 ✓
 
 ---
 
 *Requirements defined: 2026-05-17*
-*Last updated: 2026-05-17 after initial v1.1 definition*
+*Last updated: 2026-05-17 — traceability updated after roadmap creation*
