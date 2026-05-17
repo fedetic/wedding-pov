@@ -2,10 +2,22 @@
 
 ## Current State
 
-**Version:** v1.0 — SHIPPED 2026-05-04
-**Status:** Live on Railway — ready for real-world use
+**Version:** v1.1 — In Progress
+**Previous:** v1.0 SHIPPED 2026-05-04 — Live on Railway
+**Status:** Defining milestone — building Capacitor mobile app for organizers
 
-The app is complete and wedding-ready. Organizers can sign up, connect Google Drive, create events with QR codes, and guests can scan → enter nickname → upload photos (including HEIC from iPhone) directly to Drive. OAuth is Production-verified (non-expiring refresh tokens). Full flow confirmed on iPhone iOS Safari.
+The web app is complete and live. v1.1 adds an iOS and Android native app for organizers (Capacitor wrapper of the existing organizer dashboard), published to App Store and Google Play.
+
+## Current Milestone: v1.1 Mobile App
+
+**Goal:** Publish the organizer dashboard as a native iOS and Android app via Capacitor, distributed through App Store and Google Play.
+
+**Target features:**
+- Capacitor integration wrapping the existing Next.js organizer dashboard
+- iOS and Android native builds configured and buildable
+- App Store and Google Play submission (icons, splash screens, metadata)
+- Native share sheet for QR codes (share via Messages, AirDrop, etc.)
+- Google Drive OAuth flow working correctly inside the Capacitor webview
 
 **Live URL:** Railway deployment (see `.env` / Railway dashboard for URL)
 
@@ -23,29 +35,33 @@ Guests can share their POV photos at an event with zero friction — scan, name,
 
 ### Validated
 
-(None yet — ship to validate)
+**v1.0 (shipped 2026-05-04)**
+- ✓ Organizer can sign up and log in with email + password — Phase 1
+- ✓ Organizer can connect their Google Drive account via OAuth — Phase 1
+- ✓ Organizer can create an event with a name and configurable photo limit — Phase 2
+- ✓ Organizer can view and download a printable QR code for their event — Phase 2
+- ✓ Guest can scan QR code and open the upload page in a browser (no install) — Phase 3
+- ✓ Guest can enter their name/nickname before uploading — Phase 3
+- ✓ Guest can select up to the event's configured photo limit and upload them — Phase 3
+- ✓ Guest receives clear feedback when upload is complete — Phase 3
+- ✓ Photos are uploaded to the organizer's Google Drive into a flat folder named after the event — Phase 2
+- ✓ Each organizer's Drive is isolated (OAuth tokens per organizer) — Phase 1
+
+**Post-v1.0 (shipped between v1.0 and v1.1)**
+- ✓ Organizer can log out from the app
+- ✓ Organizer can disconnect / reconnect their Google Drive
+- ✓ Guest can retry failed individual photo uploads
+- ✓ Organizer can view in-app upload history per event
+- ✓ Shareable event link (copyable URL) displayed alongside QR code
+- ✓ Custom thank-you message configurable per event
 
 ### Active
 
-**Organizer**
-- [ ] Organizer can sign up and log in with email + password
-- [ ] Organizer can connect their Google Drive account via OAuth
-- [ ] Organizer can create an event with a name and configurable photo limit
-- [ ] Organizer can view and download a printable QR code for their event
-
-**Guest**
-- [ ] Guest can scan QR code and open the upload page in a browser (no install)
-- [ ] Guest can enter their name/nickname before uploading
-- [ ] Guest can select up to the event's configured photo limit and upload them
-- [ ] Guest receives clear feedback when upload is complete
-
-**Infrastructure**
-- [ ] Photos are uploaded to the organizer's Google Drive into a flat folder named after the event
-- [ ] Each organizer's Drive is isolated (OAuth tokens per organizer)
+*(No active requirements — defining for next milestone)*
 
 ### Out of Scope
 
-- Native mobile app — web works for guests; no App Store distribution needed
+- ~~Native mobile app — web works for guests; no App Store distribution needed~~ — reconsidered for v1.1
 - In-app gallery or photo curation — organizer views photos directly in Drive
 - Subfolder organization by guest — flat folder keeps it simple
 - Real-time upload dashboard — organizer monitors via Drive

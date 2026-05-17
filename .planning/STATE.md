@@ -2,19 +2,19 @@
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2025-05-02)
+See: .planning/PROJECT.md (updated 2026-05-17)
 
 **Core value:** Guests can share their POV photos at an event with zero friction — scan, name, upload, done.
-**Current focus:** ✅ ALL PHASES COMPLETE — Project shipped
+**Current focus:** v1.1 Mobile App — Capacitor native app for organizers
 
 ## Current Position
 
-Phase: 4 of 4 (Launch Readiness)
-Plan: 2 of 2 in current phase (04-01, 04-02 complete)
-Status: **COMPLETE** — all 4 phases shipped
-Last activity: 2026-05-04 — confirmed all phases complete (03-03, 04-01, 04-02 all verified)
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements for v1.1 Mobile App
+Last activity: 2026-05-17 — Milestone v1.1 started
 
-Progress: [██████████] 100%
+Progress: [░░░░░░░░░░] 0%
 
 ## Performance Metrics
 
@@ -60,11 +60,13 @@ None yet.
 
 | Category | Item | Status | Deferred At |
 |----------|------|--------|-------------|
-| Auth | Organizer log out | v2 | Planning |
-| Auth | Disconnect / reconnect Drive | v2 | Planning |
-| Guest | Retry failed individual photo | v2 | Planning |
-| Organizer | In-app upload history per event | v2 | Planning |
-| Event | Shareable event link (URL alongside QR) | v2 | Planning |
+| Auth | Organizer log out | ✅ Shipped (post-v1.0) | Planning |
+| Auth | Disconnect / reconnect Drive | ✅ Shipped (post-v1.0) | Planning |
+| Guest | Retry failed individual photo | ✅ Shipped (post-v1.0) | Planning |
+| Organizer | In-app upload history per event | ✅ Shipped (post-v1.0) | Planning |
+| Event | Shareable event link (URL alongside QR) | ✅ Shipped (post-v1.0) | Planning |
+| Organizer | Email notifications when photos are uploaded | Future | v1.0 planning |
+| Event | Custom event branding (logo, color) on guest page | Future | v1.0 planning |
 
 ## Session Continuity
 
