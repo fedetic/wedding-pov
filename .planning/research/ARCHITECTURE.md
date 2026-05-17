@@ -1,380 +1,590 @@
-# Architecture Patterns — Wedding POV
+# Architecture Research — Capacitor Integration
 
-**Domain:** Multi-tenant QR-code event photo upload web app  
-**Researched:** 2025-01-31  
-**Confidence:** HIGH (Google Drive API docs verified via Context7; patterns verified against official sources)
+**Domain:** Capacitor wrapper of an existing Next.js 15 App Router web app (Railway-deployed, server-rendered)
+**Researched:** 2026-05-17
+**Confidence:** MEDIUM-HIGH — Core Capacitor patterns HIGH; cookie SameSite behavior in WKWebView MEDIUM (platform behavior varies by iOS version); App Store approval for webview apps MEDIUM (reviewer discretion)
 
 ---
 
-## Recommended Architecture
+## The Core Architectural Decision: Static Export vs. Live URL
 
-### Pattern: Server-Brokered Direct Upload
+This is the highest-stakes decision in the integration and must be resolved first because everything else depends on it.
 
-The app uses a **server-brokered upload pattern** — the server holds Drive OAuth tokens securely and creates resumable upload sessions on behalf of guests, but guest browsers upload photo bytes directly to Google's CDN. The server is never in the data path for photo bytes.
+### Option A: Static Export (`output: "export"`)
+
+Next.js generates a fully client-side bundle into an `out/` folder. Capacitor bundles those files into the app binary. All API calls go to the Railway URL over HTTPS.
+
+**What works:**
+- Standard Capacitor pattern, well-documented
+- App binary contains all UI assets (faster startup, App Store compliant)
+- Native plugins work correctly
+
+**What breaks in this project:**
+- Server Components become Client Components — the organizer dashboard is already SSR-heavy
+- Server Actions (`"use server"`) are not supported in static export — confirmed in Next.js docs
+- `auth.api.getSession({ headers })` in middleware and Server Components cannot run — there is no server
+- The middleware at `src/middleware.ts` cannot execute
+- Drive OAuth callback (`/api/drive/callback`) is a Route Handler with DB writes — it must run server-side
+
+**Verdict for this project: Static export is not viable without a major rewrite.** The organizer dashboard relies on Server Components, Server Actions, middleware-based auth, and server-side OAuth callback handlers. Converting all of these to client-side fetch would be a substantial rewrite of the existing architecture.
+
+### Option B: Live URL (`server.url` in capacitor.config.ts pointing to Railway)
+
+The Capacitor webview loads `https://your-app.railway.app` on every launch. All server-side functionality is preserved as-is.
+
+**What works:**
+- Zero architectural changes to the Next.js app
+- Middleware, Server Components, Server Actions, cookies — all work unchanged
+- OAuth callbacks land on the Railway server as normal web requests
+- Instant iteration: deploy to Railway, update is live without an app binary push
+
+**The risks:**
+- Requires active internet connection on every launch (no offline capability)
+- Section 4.7 of App Store Review Guidelines applies to apps loading remote content; reviewers have cited this for rejection in the past
+- server.url is documented as a development tool; Ionic explicitly warns against production use
+- The app is essentially a mobile browser pointed at your Railway URL — any significant UI change post-review bypasses Apple's review (which is exactly why Apple is cautious)
+
+**App Store compliance reality (MEDIUM confidence):** Multiple Capacitor apps using server.url have shipped to App Store, but rejections have occurred. The determining factor is typically whether the app provides native functionality beyond just loading a URL. Apps with native plugins (Share, Camera, Push Notifications, etc.) are more likely to pass. A pure webview shell with no native features is the most likely rejection scenario.
+
+### Recommended Architecture: Hybrid
+
+**Ship with static export for the UI shell, call Railway API endpoints from the mobile client.**
+
+This is the architecturally correct answer and avoids both sets of problems:
+
+1. The organizer dashboard UI is refactored as a thin client-side React SPA (Client Components, no Server Components or Server Actions)
+2. All business logic stays on Railway as API Route Handlers (`/api/*`)
+3. Auth session management shifts from middleware + Server Component session reads to client-side Better Auth session calls
+4. Capacitor bundles the `out/` static build — fully App Store compliant, works offline for cached pages
+
+**What must change in Next.js:**
+
+| Current | Change Required | Effort |
+|---------|----------------|--------|
+| `src/middleware.ts` redirecting unauthenticated requests | Client-side redirect after `authClient.getSession()` check | Low |
+| Dashboard Server Components reading session via `auth.api.getSession()` | Client Components calling `authClient.getSession()` | Medium |
+| Server Actions for event mutations | `fetch('/api/events', { method: 'POST' })` from client | Medium |
+| `next.config.ts` with `X-Frame-Options: DENY` header | Remove or scope this header | Low |
+| `BETTER_AUTH_URL` trusted origins | Add Capacitor origin to trustedOrigins | Low |
+
+**What does NOT change:**
+- All `/api/*` Route Handlers on Railway — unchanged, they already work as HTTP endpoints
+- Google Drive OAuth flow — unchanged (handled entirely server-side)
+- Better Auth session cookies — works correctly when called from the mobile webview making requests to Railway
+- Guest upload pages (`/e/[slug]`) — excluded from mobile app entirely; web-only
+
+---
+
+## System Architecture: Capacitor Integration
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                         CLIENT LAYER                            │
-│                                                                 │
-│  ┌──────────────────────┐      ┌──────────────────────────┐    │
-│  │   Guest Browser      │      │   Organizer Browser      │    │
-│  │  (no auth required)  │      │   (email+password login) │    │
-│  └──────────┬───────────┘      └────────────┬─────────────┘    │
-│             │                               │                   │
-└─────────────┼───────────────────────────────┼───────────────────┘
-              │                               │
-              ▼                               ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                    SERVER LAYER (Next.js)                       │
-│                                                                 │
-│  ┌─────────────────┐  ┌──────────────┐  ┌───────────────────┐  │
-│  │  Guest Upload   │  │  Organizer   │  │   Drive OAuth     │  │
-│  │  API Routes     │  │  API Routes  │  │   Module          │  │
-│  │                 │  │              │  │                   │  │
-│  │ POST /api/      │  │ POST /api/   │  │ GET  /api/auth/   │  │
-│  │  upload/init    │  │  events      │  │  google/callback  │  │
-│  │ POST /api/      │  │ GET  /api/   │  │                   │  │
-│  │  upload/confirm │  │  events/:id  │  │ Token refresh     │  │
-│  └────────┬────────┘  └──────┬───────┘  └────────┬──────────┘  │
-│           │                  │                    │             │
-│           └──────────────────┼────────────────────┘            │
-│                              │                                  │
-│                   ┌──────────▼──────────┐                      │
-│                   │   Database Module   │                      │
-│                   │   (Prisma + PG)     │                      │
-│                   └─────────────────────┘                      │
-└──────────────────────────────┬──────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────┐
+│                      MOBILE NATIVE LAYER                            │
+│                                                                     │
+│  ┌──────────────────────────────────────────────────────────────┐   │
+│  │                   Capacitor Shell (iOS / Android)             │   │
+│  │                                                               │   │
+│  │  ┌─────────────────────────────────────────────────────────┐ │   │
+│  │  │              WKWebView / Android WebView                 │ │   │
+│  │  │                                                          │ │   │
+│  │  │   Static HTML/JS/CSS bundle (out/ from next build)      │ │   │
+│  │  │   Client-side React SPA                                  │ │   │
+│  │  │   Better Auth client → fetch to Railway                  │ │   │
+│  │  │   Event API calls → fetch to Railway                     │ │   │
+│  │  │                                                          │ │   │
+│  │  └──────────────────────────┬───────────────────────────────┘ │   │
+│  │                             │                                  │   │
+│  │  ┌──────────────────────────▼───────────────────────────────┐ │   │
+│  │  │              Capacitor Plugin Bridge                     │ │   │
+│  │  │                                                          │ │   │
+│  │  │  @capacitor/share    → Native share sheet (QR codes)    │ │   │
+│  │  │  @capacitor/browser  → System browser (OAuth)           │ │   │
+│  │  │  @capacitor/app      → appUrlOpen events (deep links)   │ │   │
+│  │  └──────────────────────────────────────────────────────────┘ │   │
+│  └──────────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────┘
+                               │
+                          HTTPS to Railway
+                               │
+┌──────────────────────────────▼──────────────────────────────────────┐
+│                    RAILWAY DEPLOYMENT (unchanged)                    │
+│                                                                      │
+│   Next.js 15 App Router server                                      │
+│                                                                      │
+│   /api/auth/[...all]     ← Better Auth (sessions, login, signup)    │
+│   /api/drive/connect     ← Initiates Google OAuth                   │
+│   /api/drive/callback    ← Receives Google OAuth code               │
+│   /api/drive/disconnect  ← Removes Drive connection                 │
+│   /api/events/*          ← Event CRUD                               │
+│   /api/upload/[slug]     ← Guest upload initiation (web-only)       │
+│   /e/[slug]              ← Guest upload page (web-only, excluded    │
+│                             from mobile app routes)                  │
+│                                                                      │
+└──────────────────────────────────────────────────────────────────────┘
                                │
               ┌────────────────┴────────────────┐
               ▼                                 ▼
 ┌─────────────────────────┐        ┌────────────────────────────┐
-│   PostgreSQL Database   │        │   Google Drive API         │
-│                         │        │                            │
-│  organizers             │        │  /upload/drive/v3/files    │
-│  events                 │        │   ?uploadType=resumable    │
-│  drive_credentials      │        │                            │
-│  upload_records         │        │  Per-organizer folders     │
+│   Neon PostgreSQL        │        │   Google Drive API          │
+│   (unchanged)            │        │   (unchanged)               │
 └─────────────────────────┘        └────────────────────────────┘
-                                              ▲
-                                              │
-                              Photo bytes PUT directly by
-                              guest browser (no auth needed
-                              once session URI is issued)
 ```
 
 ---
 
-## Component Boundaries
+## Authentication: Better Auth Cookies in Capacitor WebView
 
-| Component | Responsibility | Communicates With |
-|-----------|---------------|-------------------|
-| **Guest Upload UI** | QR landing page, nickname entry, photo selection, upload progress | Upload API Routes |
-| **Organizer Dashboard UI** | Event CRUD, QR code display, upload history view | Organizer API Routes |
-| **Upload API Routes** | Validate events, initiate Drive resumable sessions, record completions | Database Module, Drive OAuth Module |
-| **Organizer API Routes** | Event CRUD, slug generation, Drive folder creation, QR generation | Database Module, Drive OAuth Module |
-| **Drive OAuth Module** | Initiate Drive OAuth flow, exchange codes, refresh access tokens | Google OAuth endpoints, Database Module |
-| **Auth Module (Better Auth)** | Organizer email/password login, session management | Database (users table) |
-| **Database Module (Prisma)** | Type-safe DB access, migrations, row-level data isolation | PostgreSQL |
+### How cookies behave in a Capacitor webview
+
+The WebView in a Capacitor app uses WKWebView (iOS) and Android WebView, each maintaining cookie storage isolated from the system browser (Safari/Chrome). When the static webview makes `fetch` requests to `https://your-app.railway.app` with `credentials: "include"`, the browser sends and receives cookies scoped to the Railway domain.
+
+**The critical constraint:** The webview origin is `capacitor://localhost` (iOS default) or `https://localhost` (Android default). Any fetch to `https://your-app.railway.app` is cross-origin. For Better Auth's session cookies to work:
+
+1. The cookie must have `SameSite=None; Secure` to be sent on cross-origin requests from the webview
+2. The Railway server must return `Access-Control-Allow-Origin: https://localhost` (or use a wildcard, with care) and `Access-Control-Allow-Credentials: true`
+3. Better Auth's `trustedOrigins` must include `capacitor://localhost` and `https://localhost`
+
+**iOS 14+ WKWebView ITP (Intelligent Tracking Prevention):** Apple's WebKit ITP can block third-party cookies. Because the webview origin (`capacitor://localhost`) differs from the cookie domain (`railway.app`), these are treated as cross-site. This means the cookie approach is unreliable on iOS without additional configuration.
+
+**Mitigation for iOS:** Configure `WKAppBoundDomains` in `Info.plist` to declare `your-app.railway.app` as an app-bound domain. This relaxes ITP restrictions for declared domains.
+
+**Alternative approach — Bearer token in localStorage:** Instead of relying on session cookies, the mobile app stores the session token in `localStorage` after login and includes it as an `Authorization: Bearer <token>` header on all requests. Better Auth supports both cookie and token-based sessions. This completely bypasses the cross-origin cookie problem and is the recommended approach for Capacitor.
+
+Better Auth's client SDK (`authClient`) handles this when configured with `fetchOptions: { credentials: "include" }` for web, or can be switched to token mode for mobile detection.
+
+### Detecting mobile context
+
+```typescript
+// In auth-client.ts — detect Capacitor environment
+import { Capacitor } from "@capacitor/core";
+
+export const authClient = createAuthClient({
+  baseURL: process.env.NEXT_PUBLIC_APP_URL!,
+  fetchOptions: Capacitor.isNativePlatform()
+    ? {} // token-based; no credentials: include
+    : { credentials: "include" },
+});
+```
+
+Session token storage on mobile: Better Auth will store the session token in `localStorage` when not using cookies. On native, prefer using `@capacitor/preferences` for secure persistent storage across app restarts.
 
 ---
 
-## Data Flow
+## Google Drive OAuth: Redirect Flow in Mobile Webview
 
-### 1. Organizer Setup Flow
+### The problem
 
-```
-Organizer signs up (email + password)
-    → Better Auth creates user record in DB
-    → Organizer clicks "Connect Google Drive"
-    → Server redirects to Google OAuth (scope: drive.file)
-    → Google returns code to /api/auth/google/drive/callback
-    → Server exchanges code for {access_token, refresh_token}
-    → refresh_token stored encrypted in drive_credentials table
-    → Server creates root Drive folder "WeddingPOV Events"
-    → driveFolderRootId stored in organizer record
-    → Organizer is prompted to create their first event
-```
-
-### 2. Event Creation Flow
+The existing flow is a server-side redirect chain:
 
 ```
-Organizer submits event form {name, photoLimit}
-    → Server generates unique slug (8-char alphanumeric, e.g. "wdg-k7x2")
-    → Server refreshes Drive access token if needed
-    → Server creates Drive subfolder "{event.name}" inside root folder
-    → driveFolderId stored in event record
-    → Event record saved: {id, organizerId, name, slug, photoLimit, driveFolderId}
-    → Server generates QR code pointing to https://app.com/e/{slug}
-    → QR code displayed as downloadable PNG
+Dashboard → GET /api/drive/connect → 302 → accounts.google.com
+accounts.google.com → 302 → https://your-app.railway.app/api/drive/callback
+/api/drive/callback → stores tokens in DB → 302 → /dashboard?drive=connected
 ```
 
-### 3. Guest Upload Flow (the critical path)
+**This flow does not work as a simple webview navigation** because:
+1. The in-app webview navigating to `accounts.google.com` violates Google's OAuth policy — Google explicitly blocks OAuth flows inside embedded webviews (UIWebView/WKWebView) as of 2019
+2. The redirect back to `https://your-app.railway.app/api/drive/callback` would load inside the webview, not return the user to the app with a success signal
+3. Google requires OAuth to happen in the system browser for mobile apps
+
+### The solution: Capacitor Browser plugin + server callback
+
+The correct mobile OAuth pattern for server-side OAuth (where the token exchange happens on your server, not in the mobile app) is:
 
 ```
-Guest scans QR → opens https://app.com/e/{slug} in mobile browser
-    → Server looks up event by slug → returns {name, photoLimit, isActive}
-    → Guest enters nickname (stored in localStorage for session)
-    → Guest selects photos (up to photoLimit)
-
-For each photo:
-    1. Browser → POST /api/upload/initiate
-                 body: {eventSlug, guestNickname, fileName, mimeType, fileSize}
-                 
-    2. Server:
-       a. Validates event is active, slug is real
-       b. Checks guest hasn't exceeded photoLimit (count existing records)
-       c. Looks up organizer's Drive credentials
-       d. Refreshes access token if expired (using stored refresh_token)
-       e. POST to Google: /upload/drive/v3/files?uploadType=resumable
-          headers: Authorization: Bearer {access_token}
-          body: {name: "{nickname}/{fileName}", parents: [driveFolderId]}
-       f. Google returns resumable session URI (valid ~1 week)
-       g. Creates UploadRecord {status: "pending"} in DB
-       h. Returns {sessionUri, uploadRecordId} to browser
-       
-    3. Browser → PUT photo bytes directly to sessionUri
-       (No Authorization header needed — session URI is self-authenticating)
-       Google returns {id: driveFileId} on success
-       
-    4. Browser → POST /api/upload/confirm
-                 body: {uploadRecordId, driveFileId}
-       Server updates UploadRecord {status: "complete", driveFileId}
-       
-    5. Browser shows success feedback
+1. User taps "Connect Google Drive" in app
+2. App calls Capacitor.Browser.open({ url: "https://your-app.railway.app/api/drive/connect" })
+   → Opens SFSafariViewController (iOS) / Chrome Custom Tab (Android)
+   → System browser navigates through Google OAuth consent
+3. Google redirects to https://your-app.railway.app/api/drive/callback
+   → Server exchanges code, stores tokens — unchanged
+   → Server redirects to https://your-app.railway.app/dashboard?drive=connected
+4. The final redirect URL is detected by the Browser plugin
+   → App listens for browserFinished event OR detects URL change
+   → Browser.close() is called to dismiss the system browser
+5. App navigates to dashboard and fetches updated drive connection status
 ```
 
-**Why this pattern?**
-- Server never handles photo bytes (not a bandwidth bottleneck)
-- Organizer's Drive tokens never reach the guest's browser
-- Google's CDN handles delivery; resumable upload supports mobile's unreliable connections
-- Pattern is explicitly documented by Google Drive API (HIGH confidence — [source](https://developers.google.com/workspace/drive/api/guides/manage-uploads))
+**Why this works:** The system browser (SFSafariViewController) is not an embedded webview — it is the system browser that Google permits for OAuth. The token exchange happens entirely server-side, so no native SDK integration is needed. The `/api/drive/callback` redirect URI registered in Google Cloud Console remains `https://your-app.railway.app/api/drive/callback` — no custom URL scheme needed for this flow because the callback lands on your server, not in the app.
+
+**The detection mechanism:** The app detects when the OAuth flow completes by checking the URL that the Browser navigates to. When the system browser reaches `/dashboard?drive=connected` or `/dashboard?drive=error`, the app knows the flow is done:
+
+```typescript
+import { Browser } from "@capacitor/browser";
+import { App } from "@capacitor/app";
+
+async function connectDrive() {
+  await Browser.open({
+    url: `${process.env.NEXT_PUBLIC_APP_URL}/api/drive/connect`,
+    presentationStyle: "popover", // iOS: keeps app visible behind it
+  });
+
+  // Listen for the browser to finish
+  Browser.addListener("browserFinished", async () => {
+    // Re-fetch drive connection status from API
+    await refreshDriveStatus();
+  });
+}
+```
+
+**Note on Browser.close():** `Browser.close()` only works on iOS and Web. On Android, the Chrome Custom Tab closes automatically when it navigates to a URL that the Android system does not know how to handle, or when the user presses back. For this flow, the system browser stays open until the user dismisses it manually or the app detects the callback. Adding a "Return to app" link on the `/dashboard?drive=connected` page that the user taps is a reliable cross-platform UX pattern.
+
+**No changes needed to `/api/drive/connect` or `/api/drive/callback`** — these routes are unchanged. The only change is how the mobile app initiates the flow (Browser.open instead of `window.location.href`).
 
 ---
 
-## Key Data Models
+## Next.js Changes Required
 
-### `organizers` (= users table, managed by Better Auth)
+### 1. `next.config.ts` — Remove blocking headers for mobile
 
-```sql
-id              TEXT PRIMARY KEY    -- uuid
-email           TEXT UNIQUE NOT NULL
-password_hash   TEXT NOT NULL
-created_at      TIMESTAMP NOT NULL
--- Drive credentials stored separately (see below)
+The current `X-Frame-Options: DENY` header blocks the page from being loaded in any frame or webview. For the static export approach (where assets are local), this header is moot. For any server-rendered pages that the webview might load (e.g., the callback redirect landing page), this header must not block the webview.
+
+```typescript
+// next.config.ts — updated headers
+async headers() {
+  return [
+    {
+      source: "/(.*)",
+      headers: [
+        { key: "X-Content-Type-Options", value: "nosniff" },
+        // REMOVED: X-Frame-Options: DENY — blocks webview
+        { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+        { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+        // ADD for mobile webview cross-origin requests:
+        { key: "Access-Control-Allow-Origin", value: "capacitor://localhost" },
+        { key: "Access-Control-Allow-Credentials", value: "true" },
+      ],
+    },
+  ];
+},
 ```
 
-### `drive_credentials`
+**Caution:** `Access-Control-Allow-Credentials: true` with a wildcard origin is rejected by browsers. The origin must be explicit. For a production app with both web and mobile clients, use a function to set the origin header dynamically based on the request's `Origin` header.
 
-```sql
-id                TEXT PRIMARY KEY   -- uuid
-organizer_id      TEXT UNIQUE NOT NULL  -- FK → organizers.id
-access_token      TEXT               -- short-lived, refresh on use
-refresh_token     TEXT NOT NULL      -- encrypted at rest
-token_expiry      TIMESTAMP
-drive_folder_id   TEXT               -- root folder ID in Drive
-connected_at      TIMESTAMP NOT NULL
+### 2. `src/lib/auth.ts` — Add mobile origins to trustedOrigins
+
+```typescript
+export const auth = betterAuth({
+  // ...existing config...
+  trustedOrigins: [
+    process.env.BETTER_AUTH_URL!,
+    process.env.NEXT_PUBLIC_APP_URL!,
+    "capacitor://localhost",   // iOS Capacitor origin
+    "https://localhost",       // Android Capacitor origin
+  ].filter(Boolean),
+});
 ```
 
-> **Token storage:** refresh_token stored encrypted (AES-256 using `ENCRYPTION_KEY` env var). Never logged. Never returned to client.
+### 3. `src/middleware.ts` — Scope away from API routes for mobile
 
-### `events`
+The current middleware redirects unauthenticated requests to `/login`. For the static export approach, middleware does not run (no server). However, the server's `/api/*` routes still run middleware if the matcher includes them. Ensure the matcher excludes API routes so mobile fetch calls are not redirected to an HTML login page:
 
-```sql
-id              TEXT PRIMARY KEY   -- uuid
-organizer_id    TEXT NOT NULL      -- FK → organizers.id (multi-tenancy key)
-name            TEXT NOT NULL
-slug            TEXT UNIQUE NOT NULL   -- e.g. "wdg-k7x2" (URL-safe, human-readable)
-photo_limit     INT NOT NULL DEFAULT 20
-drive_folder_id TEXT NOT NULL      -- subfolder in organizer's Drive
-is_active       BOOLEAN NOT NULL DEFAULT true
-created_at      TIMESTAMP NOT NULL
+```typescript
+export const config = {
+  matcher: ["/dashboard/:path*"],
+  // API routes are NOT matched — they handle auth internally
+};
 ```
 
-### `upload_records`
+The existing matcher is already correct. No change required here.
 
-```sql
-id               TEXT PRIMARY KEY   -- uuid
-event_id         TEXT NOT NULL      -- FK → events.id
-organizer_id     TEXT NOT NULL      -- denormalized for fast isolation queries
-guest_nickname   TEXT NOT NULL
-file_name        TEXT NOT NULL
-mime_type        TEXT NOT NULL
-file_size_bytes  INT
-drive_file_id    TEXT               -- null until confirmed
-status           TEXT NOT NULL      -- "pending" | "complete" | "failed"
-initiated_at     TIMESTAMP NOT NULL
-confirmed_at     TIMESTAMP
+### 4. `next.config.ts` — Add static export mode (mobile build only)
+
+The `output: "export"` setting must only apply to mobile builds, not the Railway deployment. Use a separate next config or environment variable:
+
+```typescript
+// next.config.ts
+const nextConfig: NextConfig = {
+  output: process.env.CAPACITOR_BUILD === "true" ? "export" : undefined,
+  images: {
+    unoptimized: process.env.CAPACITOR_BUILD === "true",
+  },
+  // ...rest of config
+};
 ```
 
----
-
-## QR Code Data Model
-
-### URL Format
-
-```
-https://app.com/e/{slug}
-```
-
-- `slug`: 8-char random alphanumeric with prefix, e.g. `wdg-k7x2`
-- **No signing, no expiry in the URL** — the event's `is_active` flag controls access server-side
-- Human-readable (short enough to type if QR fails to scan)
-- No guest auth embedded in QR — all guests share the same URL; identity established by nickname at upload time
-
-### Why not a signed token in the URL?
-
-A signed token (JWT with expiry) in the QR URL would add complexity without meaningful security benefit. The event URL is meant to be shared; guests all scan the same QR. The security model is:
-- Organizer controls active/inactive state
-- Photo limit enforced server-side per guest nickname
-- Drive folder is owned by the organizer, not shared with guests
-
----
-
-## Google Drive OAuth — Scope Strategy
-
-**Required scope:** `https://www.googleapis.com/auth/drive.file`
-
-| Scope | Access | Why Chosen |
-|-------|--------|------------|
-| `drive.file` | Only files created by this app | **Correct minimum scope** — app only needs to create/read files it owns. No access to organizer's existing Drive data. |
-| `drive` | All Drive files | Overly broad — triggers security review, organizers would (rightly) distrust |
-| `drive.readonly` | Read-only | Insufficient — we need to create files |
-
-**Token lifecycle:**
-1. Organizer grants Drive access once (OAuth consent screen)
-2. Server stores `refresh_token` encrypted in DB
-3. On each upload initiation, server checks `token_expiry`:
-   - If valid: use stored `access_token`
-   - If expired: call Google token endpoint with `refresh_token` → get new `access_token`, update DB
-4. `accessType: "offline"` and `prompt: "select_account consent"` **must** be set on the OAuth flow to guarantee a refresh token is returned (confirmed via Better Auth docs — Google only issues refresh tokens on first consent unless forced)
-
----
-
-## Multi-Tenancy Model
-
-**Pattern: Row-level isolation in a shared schema**
-
-Every table with organizer-owned data has `organizer_id` as a non-nullable FK. Every server query that touches organizer data includes `WHERE organizer_id = {session.organizerId}`.
-
-```
-organizers
-    └── drive_credentials (1:1)
-    └── events (1:N)
-            └── upload_records (1:N, also has organizer_id denormalized)
-```
-
-**Isolation guarantees:**
-- No event can be queried without matching `organizer_id` (enforced in all API routes)
-- Drive credentials are 1:1 per organizer — no token sharing
-- `upload_records.organizer_id` denormalized to enable fast isolation checks without join
-- Guest upload route validates `event.organizer_id` before touching Drive credentials
-
-**Why not separate schemas?** Overkill for v1. Row-level isolation is correct at this scale and requires no infrastructure complexity. Can migrate to schema-per-tenant if needed at 1000+ organizers.
-
----
-
-## Session Model
-
-### Organizer Sessions
-
-- Better Auth manages session via HTTP-only cookie (DB-backed or JWT)
-- Standard authenticated session; all dashboard routes require active session
-
-### Guest Sessions (no auth)
-
-- **No server-side session** — guests are stateless from the server's perspective
-- **localStorage** stores `{nickname, eventSlug}` for duration of browser session
-  - Allows "resume" UX if page is accidentally closed mid-upload
-  - Cleared on successful upload completion or browser close
-- **URL param carries event context** — `/e/{slug}` is all the state needed
-- Guest nickname is captured at upload initiation time, stored in `upload_records`
-- No cookies, no accounts, no tracking beyond what's in `upload_records`
-
----
-
-## Component Communication
-
-```
-What talks to what:
-
-Guest Browser
-  ↔  Next.js Server (App Router + API Routes)
-       - GET  /e/[slug]           → Event public info (SSR)
-       - POST /api/upload/initiate → Start upload session
-       - POST /api/upload/confirm  → Mark upload complete
-
-Organizer Browser
-  ↔  Next.js Server
-       - POST /api/auth/signin          → Login
-       - GET  /api/auth/google/drive    → Initiate Drive OAuth
-       - GET  /api/auth/google/callback → Complete Drive OAuth
-       - POST /api/events               → Create event
-       - GET  /api/events               → List events
-       - GET  /api/events/[id]/uploads  → Upload history
-
-Next.js Server
-  ↔  PostgreSQL (via Prisma)        → All persistent state
-  ↔  Google OAuth endpoint          → Token exchange/refresh
-  ↔  Google Drive API v3            → Create folders, initiate resumable sessions
-
-Guest Browser (after receiving sessionUri)
-  ↔  Google Drive Upload CDN        → PUT photo bytes directly
-       (session URI is self-authenticating; no Authorization header)
+Then in `package.json`:
+```json
+{
+  "scripts": {
+    "build": "next build",
+    "build:mobile": "CAPACITOR_BUILD=true next build",
+    "mobile": "npm run build:mobile && npx cap sync"
+  }
+}
 ```
 
 ---
 
-## Suggested Build Order
+## Build Order
 
-Dependencies between components drive this order:
+The build pipeline is strictly ordered by dependencies:
 
-| # | Component | Depends On | Rationale |
-|---|-----------|------------|-----------|
-| 1 | **Database schema + Prisma setup** | — | Blocks everything |
-| 2 | **Organizer auth (email/password)** | DB | Blocks all organizer-facing features |
-| 3 | **Drive OAuth flow** | Auth (session needed to associate tokens) | Blocks event creation and uploads |
-| 4 | **Event CRUD + slug generation** | Auth, Drive OAuth (folder creation) | Blocks QR code and guest flow |
-| 5 | **QR code generation** | Events (need slug) | Blocks guest usage |
-| 6 | **Guest upload page (UI only)** | Events (need to look up by slug) | Validate UX before wiring upload |
-| 7 | **Upload initiation API** | Events, Drive OAuth, DB | Core upload flow — server half |
-| 8 | **Client-side upload + confirm** | Upload initiation (needs session URI) | Core upload flow — client half |
-| 9 | **Upload history (organizer view)** | upload_records table | Nice-to-have for organizer feedback |
+```
+1. npm run build:mobile
+   ↓ Next.js static export
+   ↓ Outputs: out/ directory with HTML/JS/CSS
 
-**Critical path:** DB → Auth → Drive OAuth → Events → Guest Upload
+2. npx cap sync
+   ↓ Copies out/ to ios/App/App/public/ and android/app/src/main/assets/public/
+   ↓ Updates Capacitor native dependencies
 
-The Drive OAuth integration is the highest-risk component (external OAuth flow, token encryption, refresh logic) and should be built and tested early rather than deferred.
+3a. iOS path:
+   npx cap open ios
+   ↓ Opens Xcode
+   ↓ Select signing team, bundle ID (com.weddingpov.app)
+   ↓ Product → Archive → Distribute to App Store Connect
+
+3b. Android path:
+   npx cap open android
+   ↓ Opens Android Studio
+   ↓ Build → Generate Signed Bundle/APK
+   ↓ Upload to Google Play Console
+```
+
+**Development iteration cycle:**
+```
+Edit code → npm run build:mobile → npx cap sync → npx cap run ios
+```
+
+**Key commands:**
+- `npx cap sync` = copy web assets + update native deps (use this after any web change)
+- `npx cap copy` = copy web assets only (faster, skips dep update)
+- `npx cap run ios` = build and run on device/simulator
+- `npx cap open ios` = open Xcode for manual build/archive
 
 ---
 
-## Architecture Decisions
+## App Store and Play Store Architectural Requirements
 
-| Decision | Rationale |
-|----------|-----------|
-| Server-brokered resumable upload (not server-proxy) | Server stays out of photo byte path; Drive tokens never reach guest browser; resumable is mobile-friendly for unreliable connections |
-| `drive.file` scope (not `drive`) | Minimum viable permission; organizers only need app-created files managed; broader scope requires Google security review |
-| Refresh token encrypted in DB (not in env var) | Per-organizer tokens must be stored per-row; env var only works for single-tenant |
-| Slug-based QR URLs (not signed tokens) | Events are designed to be shared; `is_active` flag provides sufficient access control; signed URLs add complexity with no security benefit in this model |
-| Row-level multi-tenancy (not schema-per-tenant) | Correct for v1 scale; no infra complexity; adding `organizerId` to every query is standard and auditable |
-| localStorage for guest nickname (not server session) | Zero-friction guest UX is the core value; server sessions require cookie consent overhead and session management for anonymous users |
-| denormalize `organizer_id` onto `upload_records` | Enables fast isolation checks on uploads without always joining through events |
+### iOS — App Transport Security (ATS)
+
+All HTTPS connections from the app to Railway must use TLS 1.2+, which Railway (via standard SSL) provides. No ATS exceptions are needed because the Railway URL is HTTPS. Do not add `NSAllowsArbitraryLoads: true` — it will be rejected.
+
+The only domain the app contacts externally is `your-app.railway.app`. All other network activity goes through Google OAuth in the system browser (not subject to ATS in the same way).
+
+**Info.plist additions required:**
+```xml
+<!-- Required for WKWebView cookie handling on iOS 14+ -->
+<key>WKAppBoundDomains</key>
+<array>
+  <string>your-app.railway.app</string>
+</array>
+```
+
+### iOS — App Review Guideline 4.2 (Minimum Functionality)
+
+A webview shell that only loads a website is at high rejection risk. To pass review, the app must demonstrate native functionality that is distinct from opening the URL in Safari:
+
+**Required native features for approval:**
+- Native share sheet for QR codes (`@capacitor/share`) — this is already a milestone requirement and is the primary native differentiator
+- Branded launch screen / splash screen
+- App icon (not the web favicon)
+
+**Helpful but not required:**
+- Offline fallback screen (shows branded error instead of browser's "no connection" page)
+- Custom navigation behavior (e.g., hardware back button handling on Android)
+
+**Explicit rejection triggers to avoid:**
+- Browser-style navigation bars or URL bars showing in the UI
+- Generic "You are offline" messages (the browser default)
+- No use of any native APIs whatsoever
+
+### Google Play Store — Policy Compliance
+
+Google Play is significantly more permissive than Apple for webview apps. The main requirement is that the app provides value beyond mobile web browsing. The native share sheet and the focused organizer use-case (not a generic website wrapper) are sufficient for approval.
+
+**AndroidManifest.xml — required for network access:**
+```xml
+<uses-permission android:name="android.permission.INTERNET" />
+```
+
+**Minimum SDK version:** Capacitor 6+ requires minSdkVersion 23 (Android 6.0). This covers 99%+ of active Android devices.
+
+### Google Cloud Console — OAuth Credential Requirements
+
+The existing Web Application credential (used by Railway's `/api/drive/connect` flow) continues to work for the mobile app because the OAuth flow opens in the system browser and the redirect lands on the Railway server — not in the app. No additional OAuth client IDs need to be registered.
+
+**Verify in Google Cloud Console:**
+- The authorized redirect URI `https://your-app.railway.app/api/drive/callback` is registered
+- No custom scheme redirect URIs are needed (the callback goes server-to-server)
 
 ---
 
-## Scalability Considerations
+## Integration Points
 
-| Concern | At 10 organizers | At 1K organizers | At 100K organizers |
-|---------|-----------------|------------------|--------------------|
-| DB | Single PG instance | Single PG, add read replica | Connection pooling (PgBouncer), consider sharding |
-| Upload throughput | No bottleneck (direct to Google) | No bottleneck (direct to Google) | Rate limiting on initiation endpoint |
-| Drive token refresh | Simple per-request check | Add token expiry caching in DB | Consider Redis for hot token cache |
-| Slug uniqueness | DB unique constraint sufficient | DB unique constraint sufficient | Same — slugs are compact space |
-| Multi-tenancy | Row-level sufficient | Row-level sufficient | Evaluate schema-per-tenant migration |
+### New Components (Capacitor-only)
+
+| Component | Purpose | Plugin |
+|-----------|---------|--------|
+| `capacitor.config.ts` | Capacitor configuration (webDir, appId, scheme) | core |
+| `ios/` directory | Xcode project (generated by `cap add ios`) | core |
+| `android/` directory | Android Studio project (generated by `cap add android`) | core |
+| Native share integration | Share QR code PNG via system share sheet | `@capacitor/share` |
+| OAuth browser opener | Open `/api/drive/connect` in system browser | `@capacitor/browser` |
+| Platform detection | Route around cookie issues, detect native context | `@capacitor/core` |
+
+### Modified Components
+
+| Component | What Changes | Why |
+|-----------|-------------|-----|
+| `src/lib/auth.ts` | Add `capacitor://localhost` and `https://localhost` to `trustedOrigins` | Mobile webview cross-origin auth |
+| `next.config.ts` | Remove `X-Frame-Options: DENY`; add mobile CORS headers; add `CAPACITOR_BUILD` flag | Mobile webview compatibility |
+| `src/lib/auth-client.ts` | Detect native platform, adjust fetch options or session strategy | Cross-origin cookie handling |
+| Dashboard `<a href="/api/drive/connect">` | Replace with `Browser.open()` call in mobile context | Google OAuth policy requires system browser |
+| `package.json` | Add `build:mobile` and `mobile` scripts | Build pipeline |
+
+### Unchanged Components
+
+| Component | Why Unchanged |
+|-----------|--------------|
+| All `/api/*` Route Handlers | They are HTTP endpoints; mobile client calls them the same as web client |
+| `/api/drive/connect` and `/api/drive/callback` | OAuth server-side flow is unchanged; only the initiating client differs |
+| Neon PostgreSQL / Drizzle schema | No schema changes needed |
+| Guest upload pages (`/e/[slug]`) | Excluded from mobile app; web-only |
+| Better Auth session management on server | Server-side session logic is unchanged |
+
+---
+
+## Data Flow: Drive OAuth from Mobile
+
+```
+Organizer taps "Connect Google Drive" in mobile app
+    ↓
+Browser.open({ url: "https://railway-app/api/drive/connect" })
+    ↓
+System browser (SFSafariViewController / Chrome Custom Tab) opens
+    ↓
+/api/drive/connect: unchanged — generates authUrl, returns 302 to Google
+    ↓
+User completes Google OAuth consent in system browser
+    ↓
+Google 302 → https://railway-app/api/drive/callback?code=...&state=...
+    ↓
+/api/drive/callback: unchanged — exchanges code, stores tokens, 302 → /dashboard?drive=connected
+    ↓
+System browser shows /dashboard?drive=connected (the Railway-deployed server-rendered page)
+    ↓
+User taps "Return to app" link OR dismisses the browser manually
+    ↓
+App's browserFinished listener fires → app re-fetches drive status → shows "Drive connected"
+```
+
+**Key insight:** The mobile app never sees the OAuth code or tokens. The entire exchange happens between the system browser, Google's servers, and the Railway server. This is architecturally cleaner than native SDK approaches and requires no changes to the existing backend.
+
+---
+
+## Data Flow: Authentication from Mobile
+
+```
+User enters email + password in the mobile app (Client Component)
+    ↓
+authClient.signIn.email({ email, password })  [from better-auth/client]
+    ↓
+fetch POST https://railway-app/api/auth/sign-in/email { credentials: "include" }
+    ↓
+Server validates credentials, creates session, sets Set-Cookie header
+    ↓
+[On web]: Cookie stored in browser, sent automatically on future requests
+[On mobile]: Cookie may not persist cross-origin due to WKWebView ITP
+    ↓
+[Mobile mitigation]: Extract session token from response, store in @capacitor/preferences
+    ↓
+Future API calls include Authorization: Bearer <token> header
+```
+
+---
+
+## Anti-Patterns
+
+### Anti-Pattern 1: Using `server.url` pointing to Railway in production
+
+**What people do:** Set `server.url: "https://your-app.railway.app"` in `capacitor.config.ts` for production builds.
+
+**Why it's wrong:** Violates App Store Review Guidelines section 4.7 (remote web content in native apps). Multiple developers have reported rejections. The app is a shell with no bundled assets — any post-review update to the Railway app bypasses Apple's review, which is exactly what Apple is preventing.
+
+**Do this instead:** Static export with API calls to Railway. The UI logic is in the bundle, the data layer is on Railway.
+
+### Anti-Pattern 2: Triggering Google Drive OAuth inside the main webview
+
+**What people do:** Navigate the app's webview to `/api/drive/connect` using `window.location.href` or `router.push`.
+
+**Why it's wrong:** Google explicitly blocks OAuth in embedded webviews. The authorization page will show an error ("403: disallowed_useragent") because Google detects the WKWebView user agent.
+
+**Do this instead:** Use `@capacitor/browser` to open the OAuth URL in SFSafariViewController / Chrome Custom Tab. This is the system browser and Google permits it.
+
+### Anti-Pattern 3: Relying on HTTP-only session cookies without cross-origin configuration
+
+**What people do:** Assume the Capacitor webview handles cookies the same way a desktop browser does.
+
+**Why it's wrong:** The webview origin (`capacitor://localhost`) is cross-origin from `your-app.railway.app`. WKWebView ITP (iOS 14+) blocks third-party cookies. Sessions appear to work in dev (on a simulator where ITP may not be enforced) but break on real devices.
+
+**Do this instead:** Either configure `WKAppBoundDomains` in Info.plist and `SameSite=None; Secure` on cookies, OR switch to Bearer token auth for the mobile client.
+
+### Anti-Pattern 4: Shipping a webview app with zero native features
+
+**What people do:** Build the Capacitor wrapper with no native plugins, submit to App Store.
+
+**Why it's wrong:** Apple's Guideline 4.2 rejects apps that provide no functionality beyond a mobile website. A reviewer opening the app and seeing that it's identical to visiting the URL in Safari will likely reject it.
+
+**Do this instead:** Ensure at least one meaningful native feature is present and prominent — for this app, the native share sheet for QR codes is the primary native differentiator and must be implemented before submission.
+
+---
+
+## Capacitor Configuration
+
+```typescript
+// capacitor.config.ts
+import type { CapacitorConfig } from "@capacitor/cli";
+
+const config: CapacitorConfig = {
+  appId: "com.weddingpov.app",
+  appName: "Wedding POV",
+  webDir: "out", // Next.js static export output directory
+  server: {
+    // androidScheme defaults to "https" — keep it
+    // DO NOT set server.url for production builds
+  },
+  ios: {
+    contentInset: "automatic",
+  },
+  plugins: {
+    // Enable native cookie handling if using cookie-based auth
+    CapacitorCookies: {
+      enabled: true,
+    },
+  },
+};
+
+export default config;
+```
+
+---
+
+## Scaling Considerations
+
+| Scale | Architecture Adjustments |
+|-------|--------------------------|
+| Single organizer, v1.1 | Current approach — static export + Railway API calls — is correct |
+| Multiple organizers using the mobile app | No changes needed; auth is per-organizer, Drive tokens are per-organizer |
+| OTA (over-the-air) updates to app UI | Capacitor Live Update (Capgo or Appflow) allows pushing web bundle updates without App Store resubmission — but requires careful compliance with Apple's guidelines |
 
 ---
 
 ## Sources
 
-- Google Drive API resumable upload: https://developers.google.com/workspace/drive/api/guides/manage-uploads (HIGH confidence — official docs via Context7)
-- Google Drive API scopes: https://developers.google.com/workspace/drive/api/reference/rest/v3/files/list (HIGH confidence — official docs via Context7)
-- Better Auth Google OAuth refresh token pattern: https://github.com/better-auth/better-auth/blob/main/docs/content/docs/authentication/google.mdx (HIGH confidence — official library docs via Context7)
-- Better Auth token storage: https://github.com/better-auth/better-auth/blob/main/docs/content/docs/concepts/oauth.mdx (HIGH confidence — official library docs via Context7)
+- Capacitor static export requirement: [capgo.app Next.js + Capacitor guide](https://capgo.app/blog/building-a-native-mobile-app-with-nextjs-and-capacitor/) (MEDIUM — third-party, consistent with official docs)
+- Capacitor `server.url` production concerns: [ionic-team/capacitor Discussion #5075](https://github.com/ionic-team/capacitor/discussions/5075) (HIGH — Ionic team GitHub discussion)
+- Next.js static export Server Actions limitation: [Next.js docs](https://nextjs.org/docs/app/guides/static-exports) (HIGH — official)
+- Capacitor Browser plugin (SFSafariViewController): [capacitorjs.com/docs/apis/browser](https://capacitorjs.com/docs/apis/browser) (HIGH — official)
+- Google OAuth embedded webview restriction: [developers.google.com OAuth2 for iOS & Desktop Apps](https://developers.google.com/identity/protocols/oauth2/native-app) (HIGH — official)
+- iOS WKWebView ITP cookie blocking: [webkit.org bug #213510](https://bugs.webkit.org/show_bug.cgi?id=213510) and [thinktecture.com](https://www.thinktecture.com/en/ios/wkwebview-itp-ios-14/) (HIGH — platform bug report)
+- App Store Guideline 4.2 for webview apps: [mobiloud.com analysis](https://www.mobiloud.com/blog/app-store-review-guidelines-webview-wrapper) (MEDIUM — third-party analysis of Apple guidelines)
+- Better Auth trustedOrigins: [better-auth.com/docs/reference/security](https://better-auth.com/docs/reference/security) (HIGH — official)
+- Capacitor configuration: [capacitorjs.com/docs/config](https://capacitorjs.com/docs/config) (HIGH — official)
+- Capacitor build workflow: [capacitorjs.com/docs/basics/workflow](https://capacitorjs.com/docs/basics/workflow) (HIGH — official)
+
+---
+
+*Architecture research for: Capacitor integration with Next.js 15 App Router on Railway*
+*Researched: 2026-05-17*

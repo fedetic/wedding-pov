@@ -1,397 +1,329 @@
-# Domain Pitfalls
+# Pitfalls Research
 
-**Domain:** QR-code-based event photo upload web app (Google Drive backend, guest upload, multi-tenant)
-**Researched:** 2025-05-02
-**Sources:** Google Workspace Drive API docs (Context7), Google Identity OAuth2 docs, googleapis Node.js client docs, Google Drive limits page (live), Google Drive API auth docs (live)
+**Domain:** Adding Capacitor to an existing Next.js 15 App Router web app (Railway-deployed SSR) for App Store and Google Play distribution
+**Researched:** 2026-05-17
+**Confidence:** HIGH (multiple authoritative sources cross-validated for each critical pitfall)
 
 ---
 
 ## Critical Pitfalls
 
-Mistakes that cause rewrites, security incidents, or complete showstoppers.
+Mistakes that cause showstoppers, store rejections, or security failures.
 
 ---
 
-### Pitfall 1: OAuth App in "Testing" Status — Refresh Tokens Expire in 7 Days
+### Pitfall 1: Google OAuth Inside the Capacitor WebView — `disallowed_useragent`
 
-**What goes wrong:** When your Google Cloud project's OAuth consent screen is set to **Publishing status: Testing**, every refresh token issued to organizers expires in exactly **7 days**. After that, the organizer's Drive connection silently breaks — uploads start failing with `invalid_grant` — and they must re-authorize. For a wedding with 90 days between event creation and the day, this means re-linking Drive multiple times.
+**What goes wrong:**
+Opening Google's OAuth authorization URL inside WKWebView (iOS) or Android WebView causes Google to return a hard `403: disallowed_useragent` error. The login page does not load. The organizer cannot connect their Google Drive inside the app.
 
-**Why it happens:** Google intentionally limits Testing-mode apps to prevent abuse before verification. The 7-day limit applies to any app requesting scopes beyond basic profile/email (`userinfo.email`, `userinfo.profile`, `openid`). `drive.file` scope triggers the 7-day expiry in Testing mode.
+**Why it happens:**
+Google permanently blocked OAuth inside embedded webviews in September 2021. Their policy states that embedded browser controls (WKWebView, Android WebView) allow developers to intercept keystrokes and cookies during the auth flow, making them a man-in-the-middle risk. This is enforced by User-Agent detection — Capacitor's WKWebView is fingerprinted and blocked at the Google OAuth endpoint. There is no workaround that doesn't violate Google's Terms of Service (spoofing the User-Agent is explicitly prohibited).
 
-**Consequences:**
-- Organizer's Drive connection breaks mid-event with no warning
-- All guest uploads fail with a confusing error
-- Organizer must re-connect Drive, generate a new QR code, and redistribute it — catastrophic on the day of an event
+**How to avoid:**
+Open the Google OAuth flow in the system browser, not in the webview. The correct pattern for Capacitor:
+1. Use the `@capacitor/browser` plugin to open the Google authorization URL in SFSafariViewController (iOS) or Chrome Custom Tabs (Android).
+2. Register a custom URL scheme (e.g. `com.weddingpov.app://oauth`) or Universal Link in `Info.plist` / `AndroidManifest.xml`.
+3. Configure your server's OAuth callback (`/api/drive/callback`) to redirect to `com.weddingpov.app://oauth?code=...` after the Google callback completes.
+4. Capacitor's App plugin picks up the deep link and the app extracts the auth code.
+5. The app sends the code to your server to exchange for tokens — server completes the flow server-side as today.
 
-**Prevention:**
-- Submit the app for **OAuth verification** before any real event is hosted. With `drive.file` (non-sensitive scope), basic verification is required but not the full security assessment.
-- Display a clear reconnect prompt in the organizer dashboard when token refresh fails (catch `invalid_grant`, prompt re-auth).
-- Store `refresh_token` only on the server; never let it expire silently — set up a periodic token health check or catch 401s proactively.
-- In development, add test accounts explicitly in the GCP console to avoid the 7-day expiry for your own testing accounts (doesn't fix production, but helps local iteration).
+This preserves the server-side token exchange (Google tokens never touch the app client) while routing the consent screen through a safe browser.
 
-**Detection:** Watch for `invalid_grant` in server logs. If organizer's last connected time is >6 days ago, surface a "Reconnect Drive" banner in the dashboard.
+**Warning signs:**
+- You see "This browser or app may not be secure" on a Google login screen inside the app.
+- You receive a `403 disallowed_useragent` error before Google's login page renders.
+- Any attempt to load `accounts.google.com` in the Capacitor webview.
 
-**Phase:** Must be addressed before any production event; OAuth verification should be in Phase 1 (auth + Drive connection) planning as a *required gate* before launch.
-
-**Source:** https://developers.google.com/identity/protocols/oauth2#expiration
-
----
-
-### Pitfall 2: Using `drive` Scope (Restricted) Instead of `drive.file` (Non-Sensitive)
-
-**What goes wrong:** Using `https://www.googleapis.com/auth/drive` (full Drive access) instead of `https://www.googleapis.com/auth/drive.file` triggers the **restricted scope** path, which requires:
-- A full security assessment by a third-party auditor
-- Proof your app falls into one of Google's qualified categories (backup/sync, productivity, etc.)
-- App review timelines of weeks to months
-
-`drive.file` is sufficient for this app — it grants access only to files and folders the app itself creates, which is exactly what we need (create a folder, upload files into it).
-
-**Why it happens:** Developers default to `drive` scope because it's the most obvious and always works; restricted scope consequences aren't obvious until verification is required.
-
-**Consequences:** App stuck in Testing mode permanently, or you must rebuild the OAuth flow with a narrower scope and re-get organizer consent.
-
-**Prevention:**
-- Use `https://www.googleapis.com/auth/drive.file` exclusively.
-- This scope only lets the app see/modify files *it created* — cannot list or read the organizer's existing Drive files, which is a feature, not a limitation.
-- `drive.file` is classified as **non-sensitive**, requiring only basic OAuth App Verification, not a security assessment.
-
-**Detection:** Check your GCP OAuth consent screen's declared scopes. If you see `drive` without `.file`, correct immediately.
-
-**Phase:** Must be set correctly in Phase 1 (Drive OAuth integration). Wrong scope = rewrite of auth flow later.
-
-**Source:** https://developers.google.com/workspace/drive/api/guides/api-specific-auth
+**Phase to address:** Phase 1 (Capacitor setup + Google Drive OAuth mobile flow). This must be solved before any organizer can use the mobile app at all. It is the single highest-risk item in this milestone.
 
 ---
 
-### Pitfall 3: Uploading Photos Directly from the Browser to Google Drive API (CORS Trap)
+### Pitfall 2: Static Export Breaks the Entire Server Stack
 
-**What goes wrong:** Attempting to call `https://www.googleapis.com/upload/drive/v3/files` directly from the guest's browser using the organizer's access token. This exposes the organizer's token to every guest's browser (token in JavaScript = token in DevTools = token can be abused) and causes CORS `origin_mismatch` issues if your domain isn't registered in GCP.
+**What goes wrong:**
+Every tutorial for "Capacitor + Next.js" instructs adding `output: 'export'` to `next.config.ts`. This converts the app to a static site. In a static export:
+- Server Actions fail to build (`Server Actions are not supported with static export`)
+- API routes (Route Handlers) only support GET and cannot read request headers or cookies
+- Middleware does not run at all
+- Server Components that do data fetching break
+- Better Auth's session cookies cannot be validated server-side
 
-**Why it happens:** It seems efficient — skip the server, upload straight to Drive. But the token exposure is a critical security flaw.
+For wedding-pov, the organizer dashboard is built entirely on server components, server actions, and HTTP-only session cookies managed by Better Auth. A static export would require rewriting essentially the entire authenticated portion of the app.
 
-**Consequences:**
-- Organizer's `access_token` visible in every guest's browser network tab
-- Any guest (or malicious actor) can use the token directly against Drive for 1 hour
-- `origin_mismatch` CORS errors unless every deploy domain is registered in GCP authorized JavaScript origins
+**Why it happens:**
+The static export tutorials assume a simple SPA that calls an external backend API. The App Router pattern of server-side rendering, server actions, and server-brokered Google Drive uploads does not survive static export.
 
-**Prevention:**
-- **All Drive API calls must go through your server.** Guest POSTs photo bytes to your API → your server authenticates to Drive using the stored organizer token → your server streams/uploads to Drive.
-- Server holds the `refresh_token` and `access_token` only. Guests never see them.
-- This also gives you server-side rate limiting, file validation, and audit logging for free.
+**How to avoid:**
+Do NOT use `output: 'export'`. Instead, configure Capacitor to load from the Railway-deployed URL using `server.url` in `capacitor.config.ts` for development, and evaluate one of these two production strategies:
 
-**Detection:** If you ever see `googleapis.com` in your frontend's network requests, something is wrong.
+- **Option A (recommended for this app):** Point `server.url` at the Railway production URL permanently. The app is a thin native shell around the existing SSR web app. All server functionality (auth, Drive OAuth, server actions) works unchanged. The App Store review risk (guideline 4.2) is mitigated by adding at least two native features (native share sheet for QR codes, and potentially Face ID / push notifications).
+- **Option B (future-proof but complex):** Split the dashboard into client-only pages that call API routes, removing server actions and SSR dependencies. This is a significant refactor and is not justified for v1.1.
 
-**Phase:** Architecture decision in Phase 1. If designed correctly from the start, this pitfall costs zero extra effort.
+**Warning signs:**
+- Your `next.config.ts` contains `output: 'export'`
+- Build fails with "Server Actions are not supported with static export"
+- Authentication redirects silently break in the packaged app
+- Pages load but show no data (server actions silently do nothing)
 
----
-
-### Pitfall 4: Not Using Resumable Uploads for Mobile Photo Files
-
-**What goes wrong:** Using simple (`uploadType=media`) or multipart uploads for photos from mobile. Modern smartphone photos are 3–15 MB. On mobile networks, connections drop. A simple upload that fails at 90% restarts from 0%. Guest gives up, thinks upload worked (it didn't), and you lose their photos.
-
-**Why it happens:** Simple upload is easier to implement; multipart is well-documented. Resumable requires an extra round-trip to initiate the session.
-
-**Consequences:**
-- Silent photo loss on poor connections
-- Guest sees no failure feedback if error handling is missing
-- Wedding photos from a key moment are gone
-
-**Prevention:**
-- Use **resumable uploads** (`uploadType=resumable`) for all photos. Google's own guidance: "Resumable uploads are recommended for large files (greater than 5 MB) and when there's a high chance of network interruption, such as in mobile applications."
-- Resumable session URIs are valid for **one week** — enough to handle any retry window.
-- Chunk size: 256 KB minimum, 5–10 MB recommended chunks on mobile.
-- Show per-file progress bar using the chunk offset to calculate percentage.
-- Implement automatic retry with exponential backoff on network errors.
-
-**Detection:** If upload uses a single POST with the file body, it's not resumable. Test on a throttled mobile connection.
-
-**Phase:** Phase 2 (guest upload flow). Non-negotiable for any real event.
-
-**Source:** https://developers.google.com/workspace/drive/api/guides/manage-uploads
+**Phase to address:** Phase 1 (Capacitor configuration). The architecture decision — `server.url` vs static export — must be made before any code is written.
 
 ---
 
-### Pitfall 5: Guest Upload Has No Rate Limiting — Anyone Can Spam the Organizer's Drive
+### Pitfall 3: CORS Rejection — `capacitor://localhost` and `http://localhost` Origins Blocked Server-Side
 
-**What goes wrong:** The guest upload URL has no authentication. Anyone who gets the URL (or the QR code) can upload unlimited files. A bad actor could:
-- Upload gigabytes of garbage until the organizer's Drive is full (750 GB/day Google-side limit)
-- Upload malicious files disguised as photos
-- Exhaust your project's Drive API quota (400M quota units/day project-wide)
+**What goes wrong:**
+When a Capacitor app makes API requests, the browser origin is `capacitor://localhost` (iOS) or `http://localhost` (Android). Your Railway server's CORS configuration only allows `https://your-app.railway.app`. All API calls — including Better Auth session validation and server action requests — fail with CORS errors.
 
-**Why it happens:** No-login design is intentional for UX; abuse prevention is an afterthought.
+**Why it happens:**
+Capacitor runs your web assets from a local scheme. When the native WebView makes requests to your remote Railway server, the request carries a non-standard origin that the server has never seen. Most CORS configs have an explicit allowlist of known HTTPS origins; the Capacitor schemes are not on it.
 
-**Consequences:**
-- Organizer's Drive storage flooded
-- Legitimate guest photos buried or rejected due to quota exhaustion
-- Legal/ToS issues if malicious content is stored in organizer's Drive
+**How to avoid:**
+Add `capacitor://localhost` and `http://localhost` to the CORS `Access-Control-Allow-Origin` allowlist on your Railway server, scoped to the same trusted routes already allowed for the web app. Also add `credentials: 'include'` to all fetch calls from the app (or verify it's already set). Update Better Auth's `trustedOrigins` config to include both Capacitor origins.
 
-**Prevention:**
-- **Server-side rate limiting by IP**: max N uploads per IP per hour (suggest 20–30 for an event with 100 guests, 5 photos each).
-- **Per-session limits**: enforce the event's configured photo limit on the server, not just the client. Guests are session-keyed by nickname + server-side session token.
-- **File type validation on the server**: accept only MIME types `image/jpeg`, `image/png`, `image/heic`, `image/webp`. Reject everything else. Do not trust the `Content-Type` header alone — validate file magic bytes.
-- **File size cap on the server**: reject files > 25 MB before they reach Drive.
-- **Nickname + session binding**: issue a short-lived server-side session token when the guest submits their nickname. All uploads in that session are scoped to that token. Prevents re-using a session token to exceed limits.
+Additionally, configure the Capacitor HTTP plugin (`@capacitor/http`) which intercepts native requests and bypasses WebView CORS restrictions entirely — use it for any call that cannot be fixed via server-side CORS headers.
 
-**Detection:** No rate limiting at all is the warning sign. Add middleware logging upload counts per IP; alert if any IP exceeds 3× the per-session limit in 10 minutes.
+**Warning signs:**
+- API calls that work in the browser fail silently in the packaged app
+- Network tab in Safari Web Inspector (attached to iOS device) shows CORS preflight failures
+- Server logs show no incoming request at all (request was blocked before it left the WebView)
 
-**Phase:** Phase 2 (guest upload). Must be in the initial implementation, not a later hardening pass.
+**Phase to address:** Phase 1 (Capacitor setup). Test CORS before any feature work begins — it blocks everything.
 
 ---
 
-## Moderate Pitfalls
+### Pitfall 4: HTTP-Only Session Cookies Not Sent From Capacitor WebView
+
+**What goes wrong:**
+Better Auth issues HTTP-only session cookies to the organizer's browser. When the same app runs inside a Capacitor WebView talking to a remote Railway server, the cookies are either:
+- Not set at all (iOS rejects cookies from cross-origin `Set-Cookie` due to ITP/SameSite policy)
+- Set but not persisted after app restart
+- Dropped because `SameSite=None; Secure` requires a secure context but `capacitor://localhost` is not HTTPS
+
+The organizer appears logged in, closes the app, reopens it, and is logged out. Or never appears logged in at all.
+
+**Why it happens:**
+iOS WebKit (WKWebView) changed its default cookie acceptance policy to `NSHTTPCookieAcceptPolicyOnlyFromMainDocumentDomain`. Any cookie set by a cross-origin response (i.e., your Railway server responding to requests from `capacitor://localhost`) is treated as a third-party cookie and rejected. This is the same ITP (Intelligent Tracking Prevention) mechanism that blocks tracking cookies in Safari.
+
+Additionally, `Secure` cookies require HTTPS but the Capacitor scheme is not considered a secure context by WebKit, making `SameSite=None; Secure` cookies unusable in some Capacitor versions.
+
+**How to avoid:**
+Use the `better-auth-capacitor` plugin (https://github.com/productdevbook/better-auth-capacitor), which was purpose-built for this exact problem. It:
+- Intercepts Better Auth session requests on native and stores session tokens in device native storage instead of relying on WebView cookie storage
+- Handles the OAuth flow via system browser with deep link callback
+- Provides a `/capacitor-authorization-proxy` endpoint registration for origin override
+- Dispatches `better-auth:session-update` DOM events after OAuth completion
+
+If not using the plugin, the fallback pattern is: the server issues a short-lived Bearer token (alongside or instead of cookies) that the app stores in Capacitor's `@capacitor/preferences` (secure native storage) and attaches to every request as an `Authorization: Bearer` header.
+
+**Warning signs:**
+- Organizer is logged out every time the app is backgrounded or restarted
+- Server logs show requests with no session cookie attached
+- Login succeeds but the next navigation immediately redirects to login again
+- `document.cookie` is empty in the WebView JS console
+
+**Phase to address:** Phase 1 (auth + Capacitor integration). Authentication is the gate for all other features.
 
 ---
 
-### Pitfall 6: iOS Safari HEIC Handling — Server Must Accept `image/heic`
+### Pitfall 5: App Store Rejection — Guideline 4.2 "Minimum Functionality" (Webview Wrapper)
 
-**What goes wrong:** iPhones default to HEIC format. When a guest uses `<input type="file" accept="image/*">`, iOS Safari does auto-convert HEIC → JPEG when the file is selected — but only when `accept="image/*"` is used. If you set `accept="image/jpeg,image/png"` explicitly (omitting HEIC), iOS may still show HEIC files in the picker but they arrive as the raw HEIC binary, confusing servers that only accept JPEG.
+**What goes wrong:**
+Apple's App Review team rejects apps under Guideline 4.2 when the submission is judged to be "a thin veneer" over a website with no native functionality. A Capacitor app that simply loads a URL and provides no native experience is exactly what this guideline targets. The rejection notice says the app "does not include enough features or content" and that users would be better served by a web clip or Safari bookmark.
 
-**Why it happens:** HEIC browser support is inconsistent. iOS handles it in the OS layer, not the browser.
+**Why it happens:**
+Apple explicitly states: "Your app should include features, content, and UI that elevate it beyond a repackaged website." Reviewers ask: "What can this app do that Safari cannot?" If the answer is "nothing," it gets rejected. The review is subjective — the same app can be approved by one reviewer and rejected by another — but thin webview wrappers with zero native integration are consistently flagged.
 
-**Consequences:**
-- Files rejected server-side because MIME type is `image/heic` not `image/jpeg`
-- Guest sees an error with no clear explanation ("invalid file type")
-- HEIC files are 2× smaller than JPEG — worth preserving if possible
+**How to avoid:**
+Add at least two meaningful native features that are genuinely not available in the browser version. For this app, the best candidates are:
 
-**Prevention:**
-- Use `accept="image/*"` (not a specific list) — this lets iOS do its HEIC → JPEG conversion.
-- Add `image/heic` and `image/heif` to your server's accepted MIME types as fallback.
-- If you want to serve the HEIC to the organizer's Drive without conversion, store it as-is — macOS and Google Photos handle HEIC natively.
-- Do not reject `image/heic` server-side.
+1. **Native Share Sheet for QR codes** — `@capacitor/share` lets the organizer share the QR code image or event link via AirDrop, Messages, WhatsApp, etc. This is a native iOS capability that Safari web apps cannot access.
+2. **Biometric unlock / Face ID** — `@capacitor/preferences` + `@capacitor-mlkit/face-detection` or simply using Face ID to re-authenticate (Better Auth + biometric). Genuinely native, genuinely useful.
+3. **Push notifications for upload activity** — notify the organizer when guests start uploading. Native, valuable, impossible in Safari without PWA setup.
 
-**Detection:** Test the upload flow on an iPhone using Camera Roll — check what MIME type arrives at your server.
+Do NOT submit with only the QR native share as the sole differentiator — add at least one more. Include a brief note in the App Review notes field describing the native features present and why the app genuinely needs to be a native app (e.g., "Organizers use the native share sheet to distribute QR codes via AirDrop at the event venue").
 
-**Phase:** Phase 2 (upload flow). Simple to handle correctly upfront.
+**Warning signs:**
+- The app has zero usage of any Capacitor native plugin beyond the basic webview
+- The only difference from opening the website in Safari is the app icon on the home screen
+- No offline handling, no native UI elements, no system integration
 
----
-
-### Pitfall 7: Loading Large Photo Files into Memory Client-Side Before Upload
-
-**What goes wrong:** Using `FileReader.readAsDataURL()` or `URL.createObjectURL()` + reading entire file into an array buffer before streaming to your server. On mobile, a burst of 5 high-res photos (5–15 MB each) = 25–75 MB in RAM simultaneously. iOS Safari has aggressive memory limits and will kill the tab.
-
-**Why it happens:** Tutorial code often reads files fully into memory; streaming is less obvious.
-
-**Consequences:**
-- Browser tab crashes mid-upload on older iPhones
-- Guest loses all upload progress silently
-- No error message (tab just reloads)
-
-**Prevention:**
-- Stream the file directly using `fetch()` with the `File` object as the body — browsers can stream `File` objects without loading them fully into memory.
-- Do NOT use `FileReader.readAsDataURL()` — it base64-encodes (1.33× size increase) and loads entirely into memory.
-- If you must chunk (for resumable uploads), read one chunk at a time using `file.slice(start, end)` and process it before moving to the next.
-- Upload files sequentially, not in parallel, to limit concurrent memory usage on mobile.
-
-**Detection:** Profile memory during upload on an iPhone 12 or older. If memory spikes > 100 MB, the approach is wrong.
-
-**Phase:** Phase 2 (upload implementation). Critical for iOS reliability.
+**Phase to address:** Phase 1 (Capacitor planning). Native features must be scoped into the plan before build — retrofitting them after rejection costs weeks. QR native share is already planned; treat it as mandatory for approval, not optional.
 
 ---
 
-### Pitfall 8: QR Code URL Too Long — Dense Code That Fails to Scan
+### Pitfall 6: OAuth Redirect URI Mismatch — Custom Scheme vs. HTTPS Universal Links
 
-**What goes wrong:** If the event URL contains long UUIDs, multiple query parameters, or is not URL-shortified, the QR code becomes Version 10+ (dense modules) requiring perfect print quality and good lighting to scan. Guests at a wedding are often in dim venues, scanning from printed programs or folded cards.
+**What goes wrong:**
+After opening the Google OAuth flow in the system browser, the callback redirect URI registered in Google Cloud Console must exactly match what your server sends after completing the token exchange. Two common mismatches:
 
-**Why it happens:** Default URL patterns like `/events/f47ac10b-58cc-4372-a567-0e02b2c3d479/upload` are 50+ characters. A 50-character URL at Error Correction Level H = QR Version 5 (37×37 modules) — manageable. A 100-character URL = Version 10+ — significantly denser.
+1. You register a custom scheme (`com.weddingpov.app://oauth`) in Google Cloud Console, but Google has deprecated custom URI schemes for installed apps since they can be intercepted by other apps on the device.
+2. You use Universal Links (`https://weddingpov.app/auth/callback`) for the deep link back into the app, but forget to set up the Apple App Site Association file (`/.well-known/apple-app-site-association`) or Android Digital Asset Links (`/.well-known/assetlinks.json`) on your domain.
 
-**Consequences:**
-- Guests can't scan the code
-- Frustration at the event, photos not captured
+Either scenario means the OAuth flow completes on Google's side, and then the user is left stranded — they're dropped back to a browser page with no way to return to the app.
 
-**Prevention:**
-- Use **short alphanumeric event slugs** (6–8 characters), not full UUIDs in the URL: `/e/w3dg9q` instead of `/events/f47ac10b-...`
-- Keep the full URL under 40 characters including the domain.
-- Generate QR codes at **Error Correction Level M or Q** (15–25% redundancy) — better resilience for print than Level L, without the density of Level H.
-- Print QR codes at minimum **2.5 cm × 2.5 cm** (1 inch) for reliable scanning from 20–30 cm.
-- Test scanning from a printed sheet (not a screen) in low light before the event.
+**Why it happens:**
+The redirect URI for native apps goes through two hops: (1) Google redirects to your server's `/api/drive/callback`, which exchanges the code for tokens, then (2) your server redirects the browser to the app's deep link. Step 2 requires either a correctly configured custom scheme registered in the app's native manifests or a Universal Link with AASA file. Developers test step 1 (server callback) without testing step 2 (browser → app handoff), leading to last-mile failures.
 
-**Detection:** Generate the QR code and count the modules. Version 5 (37×37) or lower is ideal. Test with multiple phones.
+**How to avoid:**
+- Register the custom scheme in both `Info.plist` (iOS URL Types) and `AndroidManifest.xml` (intent filter with `android:scheme`). Google Cloud Console should list `com.weddingpov.app` (custom scheme) as an authorized redirect for the final server → app redirect.
+- If using Universal Links, serve `/.well-known/apple-app-site-association` from Railway with `Content-Type: application/json` (not `application/pkce+json`) — Apple fetches this on device enrollment.
+- Test the full round-trip: open the auth URL → Google consent → Railway callback → deep link into app. Test on a physical device (simulators handle deep links differently).
 
-**Phase:** Phase 1 (event creation + QR generation). URL slug design is an architectural decision.
+**Warning signs:**
+- After Google consent, user sees a "this page cannot open" error in Safari
+- The app receives no `appUrlOpen` event after OAuth
+- Universal Link opens in the browser instead of the app
 
----
-
-### Pitfall 9: `origin_mismatch` Error When OAuth Redirect URI Changes
-
-**What goes wrong:** The OAuth redirect URI registered in GCP must exactly match the URI your server redirects to during the OAuth callback. If you add a new domain, change ports (local dev), or deploy to a new environment without updating GCP, the entire OAuth flow breaks for new organizer connections.
-
-**Why it happens:** GCP authorized redirect URIs are a static allowlist that requires manual updates.
-
-**Consequences:**
-- Organizer cannot connect their Google Drive to their account
-- App is unusable for onboarding new organizers
-
-**Prevention:**
-- Register ALL expected redirect URIs upfront: `http://localhost:3000/auth/callback`, `https://staging.yourdomain.com/auth/callback`, `https://yourdomain.com/auth/callback`.
-- Treat GCP redirect URI updates as part of any deployment checklist.
-- Document the GCP console URL and exact redirect URI format for every developer.
-
-**Detection:** Error `redirect_uri_mismatch` in OAuth callback. Check GCP console → Credentials → OAuth 2.0 Client IDs.
-
-**Phase:** Phase 1 (auth setup). Register all environments from day one.
+**Phase to address:** Phase 2 (Google Drive OAuth mobile integration). This is the implementation detail that requires the most testing time.
 
 ---
 
-### Pitfall 10: Refresh Token Silently Absent — Organizer Never Gets Drive Connected
+## Technical Debt Patterns
 
-**What goes wrong:** The `googleapis` Node.js client only issues a `refresh_token` on the **first authorization**. If you request a new auth URL without `access_type: 'offline'` and `prompt: 'consent'`, subsequent authorizations return only an `access_token` (1-hour lifetime). If you forgot to store the `refresh_token` on first auth, the token disappears and the organizer can't re-auth without revoking access and re-granting.
+Shortcuts that seem reasonable but create long-term problems.
 
-**Why it happens:** Token handling during OAuth callback is a one-shot window.
-
-**Consequences:**
-- Organizer's Drive connection breaks after 1 hour silently
-- No refresh token in DB = can't use Drive API
-- Organizer must revoke app access in their Google Account settings and re-link
-
-**Prevention:**
-- Always request `access_type: 'offline'` and `prompt: 'consent'` in the auth URL.
-- In the OAuth callback handler, assert `tokens.refresh_token` is present before saving to DB. If missing, throw an error and re-trigger the auth flow.
-- Listen for the `tokens` event on `oauth2Client` to capture token refreshes and persist updated tokens to DB.
-- Never call `getToken()` more than once per `code` — auth codes are single-use.
-
-**Detection:** After OAuth callback, log whether `refresh_token` is present. If ever null after a successful grant, the flow is broken.
-
-**Phase:** Phase 1 (Drive OAuth integration). Easy to get right with a checklist; catastrophic if missed.
-
-**Source:** https://googleapis.dev/nodejs/googleapis/latest/index.html
+| Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
+|----------|-------------------|----------------|-----------------|
+| Use `server.url` pointing to Railway for production | Zero refactoring, all SSR features preserved | App Store review risk under 4.2; app requires internet to function | Acceptable for v1.1 if 2+ native features are added |
+| Skip `better-auth-capacitor`, patch cookies manually | Avoid a dependency | iOS cookie persistence breaks unpredictably across iOS versions; support burden high | Never for cookie-dependent auth |
+| Spoof User-Agent to bypass Google's webview OAuth block | Makes OAuth work in the webview | Violates Google ToS; account/project can be suspended | Never |
+| Hard-code `capacitor://localhost` in CORS allowlist without environment check | Fast to ship | Leaks mobile-only origin in production server config; negligible risk but messy | Acceptable temporarily |
+| Submit to App Store with only one native feature (QR share) | Faster to ship | High rejection probability under 4.2; delays by 2-4 weeks | Never — add a second native feature |
+| Test OAuth redirect only in iOS Simulator | Faster development cycle | Simulator handles deep links differently than physical devices; actual deep link may silently fail | Never for OAuth flow — test on device |
 
 ---
 
-### Pitfall 11: API Quota Exhaustion at Scale — Drive Quota Is Per-Project, Not Per-Organizer
+## Integration Gotchas
 
-**What goes wrong:** All organizers' Drive uploads share a single GCP project quota: **1,000,000 quota units per minute** (project-wide) and **400,000,000 quota units per day** (hard threshold). A `files.create` (upload) costs 50 quota units. At 400M/day ÷ 50 = ~8 million uploads per day project-wide. For a single event app this is fine, but if many events run simultaneously:
+Common mistakes when connecting to external services.
 
-- 100 concurrent events × 100 guests × 5 photos = 50,000 uploads
-- Each upload = multiple API calls (create + possibly metadata)
-- Peak of 1,000 simultaneous uploads could hit per-minute limits
-
-**Why it happens:** Quota is invisible until it's exhausted, and the error (`403 userRateLimitExceeded` or `429`) is easy to mis-handle as a generic failure.
-
-**Consequences:**
-- Uploads fail during peak event time (ceremony, bouquet toss)
-- All guests across all simultaneous events affected
-
-**Prevention:**
-- Implement **exponential backoff** on all Drive API calls (required by Google).
-- Queue uploads server-side with a job queue (BullMQ, etc.) rather than immediate parallel requests — this naturally smooths traffic spikes.
-- Use the `quotaUser` parameter on API calls to scope per-user limits correctly for multi-tenant scenarios.
-- Monitor quota usage in GCP console; set alerts at 70% of daily limit.
-
-**Detection:** `403` with `reason: userRateLimitExceeded` or `429` in server logs. GCP console → APIs & Services → Quotas shows real-time usage.
-
-**Phase:** Phase 2–3. Not critical for single-event v1 but necessary before multi-tenant SaaS.
+| Integration | Common Mistake | Correct Approach |
+|-------------|----------------|------------------|
+| Google Drive OAuth on mobile | Opening `accounts.google.com` in Capacitor WebView | Open via `@capacitor/browser` (SFSafariViewController / Chrome Custom Tabs) |
+| Google Drive OAuth on mobile | Registering the app's custom scheme as the Google Cloud Console redirect URI | Register your server's `/api/drive/callback` as the redirect URI; server then redirects to the custom scheme |
+| Better Auth session cookies | Relying on `Set-Cookie` from cross-origin Railway server in WKWebView | Use `better-auth-capacitor` plugin; store session in native Preferences storage |
+| Railway server CORS | Only allowlisting `https://` origins | Also add `capacitor://localhost` (iOS) and `http://localhost` (Android) to `trustedOrigins` |
+| Deep links | Testing Universal Links only in the iOS Simulator | Must test on a physical device enrolled with your Apple Developer team |
+| Apple App Site Association | Serving AASA with wrong `Content-Type` | Must be `application/json`; Railway must serve it without authentication on `/.well-known/` path |
+| Xcode signing | Using "Automatically manage signing" then changing bundle ID | Set bundle ID once in `capacitor.config.ts` before opening Xcode; changing it after invalidates provisioning profiles |
 
 ---
 
-### Pitfall 12: Guest Nickname Has No Server-Side Validation — Collision and Confusion in Drive
+## Performance Traps
 
-**What goes wrong:** Two guests both enter "Sarah" as their nickname. Files from both are uploaded to the same flat folder with no differentiation — Drive shows two `sarah_photo1.jpg` files. Drive auto-renames on collision (adds a numeric suffix), but organizer has no way to tell which "Sarah" took which photo.
+Patterns that work in the browser but degrade in Capacitor.
 
-**Why it happens:** Guest identifiers are cosmetic only — not tied to accounts — so collision is expected.
-
-**Consequences:**
-- Organizer cannot attribute photos to guests (defeats the "POV" value proposition)
-- Confusing flat folder with duplicate-looking names
-
-**Prevention:**
-- Prefix uploaded filenames with a session UUID or timestamp: `{timestamp}_{nickname}_{original_filename}`.
-- Alternatively, create per-guest subfolders named `{nickname}-{shortId}` (re-evaluate the "flat folder" decision — per-guest folders solve both attribution and collision with minimal complexity).
-- Normalize nicknames server-side (trim, lowercase, max 30 chars) before using in filenames.
-
-**Detection:** Upload two photos from two sessions both using the same nickname — check what arrives in Drive.
-
-**Phase:** Phase 2 (upload flow). File naming scheme should be decided in architecture, not retrofitted.
+| Trap | Symptoms | Prevention | When It Breaks |
+|------|----------|------------|----------------|
+| Loading the full Railway server URL on cold start | 2–4s blank white screen while HTML/JS downloads over cellular | Consider a native loading splash or skeleton via Capacitor Splash Screen plugin | Every cold start on slow connections |
+| Not configuring WKWebView cache | Full page reload on every app open (re-downloads all JS) | Set `server.allowNavigation` and ensure Railway serves aggressive Cache-Control headers for static assets | First open after backgrounding |
+| Synchronous deep link handling that delays app startup | App open feels sluggish after OAuth redirect | Handle `appUrlOpen` asynchronously; do not block the main thread on token exchange | OAuth redirect cold starts |
+| Large QR code image shared via native share sheet without compression | Share sheet shows raw high-res PNG, fails on AirDrop to older devices | Generate share-sheet QR at 600×600px max before calling `@capacitor/share` | Sharing to iOS 14 or older devices |
 
 ---
 
-## Minor Pitfalls
+## Security Mistakes
+
+Mobile-specific security issues beyond the v1.0 web security posture.
+
+| Mistake | Risk | Prevention |
+|---------|------|------------|
+| Storing Better Auth session token in `localStorage` in the WebView | Accessible to any injected JS; XSS → session theft | Use `@capacitor/preferences` (native secure storage) for any tokens held natively |
+| Leaving `server.url` pointed at `localhost:3000` in a production build | Production app talks to nothing; auth always fails | Use environment-conditional config: `server.url` only in dev builds; remove for release |
+| Disabling App Transport Security (ATS) on iOS to allow HTTP | Allows downgrade attacks; likely App Store rejection | Railway is HTTPS; ATS should remain enabled |
+| Allowing `allowNavigation: ['*']` in `capacitor.config.ts` | App webview can navigate to any external URL, including malicious redirects after OAuth | Restrict `allowNavigation` to your Railway domain and `accounts.google.com` callback only |
+| Exposing raw Google `access_token` or `refresh_token` in the mobile app | Tokens can be extracted from app storage or memory | All Drive API calls remain server-side; mobile app only holds a Better Auth session token |
 
 ---
 
-### Pitfall 13: CSP Blocking Google OAuth Redirect or API Calls
+## UX Pitfalls
 
-**What goes wrong:** A Content Security Policy that doesn't include Google's domains causes the OAuth popup or redirect to be blocked, or API calls to fail silently.
+Mobile-specific user experience mistakes for the organizer app.
 
-**Prevention:**
-- Add to CSP:
-  - `script-src: https://accounts.google.com/gsi/client`
-  - `connect-src: https://accounts.google.com/gsi/ https://www.googleapis.com`
-  - `frame-src: https://accounts.google.com`
-- If server-side OAuth (recommended), only the redirect matters — no JavaScript CSP needed for Drive API since calls are server-side.
-
-**Phase:** Phase 1 (auth setup).
-
-**Source:** Google Identity CSP docs
+| Pitfall | User Impact | Better Approach |
+|---------|-------------|-----------------|
+| White screen on cold start while Railway HTML loads | Organizer sees a blank screen for 2–4 seconds — feels broken | Configure Capacitor Splash Screen plugin to hold until the webview signals ready |
+| No offline state handling | App crashes or shows network error with no explanation when organizer opens app without internet | Show a graceful "You're offline" state in the webview; cache the dashboard shell |
+| OAuth flow opens system browser, user does not return to app (deep link fails) | Organizer completes Google auth but lands in Safari with no path back to the app | Deep link setup must be verified end-to-end on device before any user testing |
+| Push notifications not requested at first launch | Organizers who never grant permission miss upload alerts | Request notification permission at a contextually relevant moment (first event created), with a clear explanation |
 
 ---
 
-### Pitfall 14: Guest Upload Page Not Optimized for Mobile Viewport During Upload
+## "Looks Done But Isn't" Checklist
 
-**What goes wrong:** The upload UI is desktop-designed. On mobile, a sticky footer button is obscured by the browser chrome (address bar + nav bar eating screen real estate), or the file picker opens and the page scrolls in a disorienting way. Guest taps "Done" on the file picker and doesn't realize files are queued.
+Things that appear complete but are missing critical pieces specific to this Capacitor integration.
 
-**Prevention:**
-- Use `min-height: 100dvh` (dynamic viewport height) not `100vh` on mobile — `100vh` doesn't account for browser chrome on iOS.
-- Test specifically on iPhone Safari 15+ and Android Chrome.
-- Show a persistent, unambiguous "X files selected — tap Upload" state before initiating the upload.
-- Disable the upload button during upload; show a spinner with byte-level progress.
-
-**Phase:** Phase 2 (guest upload UX). Budget specific mobile testing time.
-
----
-
-### Pitfall 15: QR Code Printed with Low Contrast or on Colored Background
-
-**What goes wrong:** A designer embeds the QR code into a wedding invitation template with a beige/tan background or decorative border that overlaps the quiet zone. Phone cameras fail to detect the code boundary.
-
-**Prevention:**
-- Require a **minimum 4-module quiet zone** (white border) around the QR code.
-- QR code must be black on white (or very high contrast). Never reverse (white on dark background) unless specifically tested.
-- Provide organizers with a plain white-background PNG for printing, separate from any styled version.
-- Add a short URL text below the QR code as a fallback: `wedding-pov.app/e/w3dg9q`.
-
-**Phase:** Phase 1 (QR code generation). Include quiet zone in the generated code by default.
+- [ ] **Google Drive OAuth on mobile:** Auth flow opened in system browser — verify it does NOT open inside the Capacitor WebView
+- [ ] **OAuth redirect return:** After Google consent, verify the app actually receives the `appUrlOpen` event on a physical device (not Simulator)
+- [ ] **Better Auth session persistence:** Close and reopen the app — verify the organizer is still logged in without re-entering credentials
+- [ ] **CORS on Railway:** Verify API calls from the iOS build succeed (not just from the web browser) using Safari Web Inspector attached to device
+- [ ] **App Store native features:** Confirm QR native share AND at least one additional native feature are implemented and testable by App Review
+- [ ] **Xcode signing:** Provisioning profile is configured for Distribution, not just Development — verify on a non-team device
+- [ ] **Android keystore:** Production keystore is generated, backed up, and used for the Play Store build — never use the debug keystore for production
+- [ ] **Bundle ID set once:** `capacitor.config.ts` `appId` matches Xcode bundle identifier and Play Console app ID exactly; changing this later invalidates everything
+- [ ] **AASA / Digital Asset Links served:** `/.well-known/apple-app-site-association` returns 200 from Railway without authentication
+- [ ] **CSP meta tag:** Capacitor injects an inline script into `index.html` at build time — confirm CSP does not block it (add nonce or allow hash)
 
 ---
 
-### Pitfall 16: No Feedback When Upload Fails — Guest Assumes Success
+## Recovery Strategies
 
-**What goes wrong:** A network error during upload shows no user-facing error (or shows a brief toast that disappears). Guest leaves thinking photos were saved. Organizer never gets them.
+When pitfalls occur despite prevention, how to recover.
 
-**Prevention:**
-- On any upload failure, show a persistent error state with a **Retry** button. Do not auto-dismiss error states.
-- Distinguish between "upload in progress", "upload complete", and "upload failed" with visually distinct states (color, icon, copy).
-- After a successful upload, show a clear confirmation: "3 photos saved to [Event Name]! 🎉".
-- Log failures server-side; distinguish between client-network errors vs. Drive API errors.
-
-**Phase:** Phase 2 (guest upload UX). Error states are often designed last — budget time for them explicitly.
+| Pitfall | Recovery Cost | Recovery Steps |
+|---------|---------------|----------------|
+| App Store rejection under 4.2 | MEDIUM (1–2 weeks) | Add 1–2 additional native features; re-submit with App Review notes explaining native functionality |
+| `disallowed_useragent` on Google OAuth discovered after shipping | HIGH (requires re-architecture of auth flow) | Migrate to `@capacitor/browser` + deep link callback; update GCP redirect URIs |
+| Session cookies not persisting on iOS discovered post-launch | MEDIUM | Add `better-auth-capacitor` plugin; migrate session storage to native Preferences; no server changes needed |
+| CORS blocking discovered in TestFlight | LOW | Add Capacitor origins to Railway CORS allowlist; deploy to Railway (no app store submission needed for server changes) |
+| Android keystore lost after Play Store submission | CATASTROPHIC (app cannot be updated, must create new listing) | Back up keystore before first Play Store submission to a password manager and a separate secure location |
+| Wrong bundle ID submitted to App Store | HIGH | Must create a new App ID in Apple Developer Portal; existing TestFlight builds are invalidated |
+| Deep link not working — OAuth redirect strands user in browser | LOW-MEDIUM | Fix AASA file or native manifest intent filter; re-deploy Railway + re-build native app |
 
 ---
 
-## Phase-Specific Warnings
+## Pitfall-to-Phase Mapping
 
-| Phase Topic | Likely Pitfall | Mitigation |
-|-------------|---------------|------------|
-| Drive OAuth setup | Refresh token absent on first grant | Always use `access_type=offline&prompt=consent`; assert token present |
-| Drive OAuth setup | Wrong scope (drive vs drive.file) | Use `drive.file` scope only; verify in GCP console |
-| OAuth verification | 7-day refresh token expiry in Testing | Submit for verification before any production event |
-| Drive OAuth setup | `redirect_uri_mismatch` in new environments | Register all environments in GCP from day one |
-| Event URL design | QR code too dense to scan | Use 6-char slug; keep URL under 40 chars total |
-| Guest upload flow | HEIC files rejected | Accept `image/*`; add `image/heic` to server allowed types |
-| Guest upload flow | Large files crash mobile tab | Stream `File` object; never use `readAsDataURL()` |
-| Guest upload flow | No rate limiting = spam | IP rate limit + server-side photo count enforcement from day one |
-| Guest upload flow | Network drop = lost upload | Use resumable uploads with chunking for all photos |
-| Guest upload flow | Silent failure = guest thinks upload worked | Persistent error state + retry button |
-| Filename/Drive | Nickname collision in flat folder | Prefix filenames with timestamp + session ID |
-| Production scale | API quota exhaustion during peak | Job queue + exponential backoff; monitor GCP quota dashboard |
+How roadmap phases should address these pitfalls.
+
+| Pitfall | Prevention Phase | Verification |
+|---------|------------------|--------------|
+| Google OAuth `disallowed_useragent` | Phase 1: Capacitor setup + native OAuth flow design | Test Google Drive OAuth on a physical iOS device; confirm no webview open of accounts.google.com |
+| Static export breaks SSR stack | Phase 1: Architecture decision (server.url vs export) | Build succeeds with server actions intact; login works in packaged app |
+| CORS rejections from Capacitor origins | Phase 1: Server CORS config update | API call from iOS build returns 200, not CORS error (verify in Safari Web Inspector) |
+| HTTP-only cookies not persisting | Phase 1: Auth strategy for mobile | Close + reopen app; session intact; no re-login required |
+| App Store 4.2 rejection | Phase 1: Native feature planning + Phase 3: App Store submission | App Review notes list 2+ native features; QR native share and one additional confirmed working |
+| OAuth redirect URI mismatch | Phase 2: Google Drive OAuth mobile flow | Full OAuth round-trip tested on physical device; app receives `appUrlOpen` event |
+| Xcode signing failures | Phase 2: iOS build setup | TestFlight build successfully installs on non-team device |
+| Android keystore loss | Phase 2: Android build setup | Keystore file and credentials backed up to secure location before first Play Store upload |
+| AASA / Digital Asset Links | Phase 2: Deep link setup | Apple's AASA validator confirms correct file; Universal Links open app, not browser |
+| Capacitor inline script CSP conflict | Phase 2: Build configuration | Production build loads without CSP errors in browser console |
+| Android Gradle / AGP version conflicts | Phase 2: Android build setup | `./gradlew assembleRelease` succeeds without errors after Capacitor install |
 
 ---
 
 ## Sources
 
-- Google Workspace Drive API limits: https://developers.google.com/workspace/drive/api/guides/limits *(confirmed: May 1, 2026 quota update; 400M units/day threshold)*
-- Google Drive upload methods: https://developers.google.com/workspace/drive/api/guides/manage-uploads *(confirmed: resumable recommended for >5 MB and mobile)*
-- Google Drive API scopes: https://developers.google.com/workspace/drive/api/guides/api-specific-auth *(confirmed: `drive.file` is non-sensitive, `drive` is restricted)*
-- Google OAuth2 token expiration: https://developers.google.com/identity/protocols/oauth2#expiration *(confirmed: 7-day expiry in Testing, 6-month inactivity expiry in production, 100 refresh tokens/client cap)*
-- googleapis Node.js client — token handling: https://googleapis.dev/nodejs/googleapis/latest *(confirmed: `tokens` event, `access_type: offline` requirement)*
-- Google Drive error handling: https://developers.google.com/workspace/drive/api/guides/handle-errors *(confirmed: exponential backoff required)*
-- Google Identity CSP requirements: https://developers.google.com/identity/gsi/web/guides/get-google-api-clientid#content_security_policy
+- Google Developer Blog — OAuth embedded webview block (enforced September 2021): https://developers.googleblog.com/upcoming-security-changes-to-googles-oauth-20-authorization-endpoint-in-embedded-webviews/
+- Google OAuth 2.0 for native apps: https://developers.google.com/identity/protocols/oauth2/native-app
+- Capacitor iOS troubleshooting guide: https://capacitorjs.com/docs/ios/troubleshooting
+- Capacitor Android troubleshooting guide: https://capacitorjs.com/docs/android/troubleshooting
+- Capacitor security guide (CSP): https://capacitorjs.com/docs/guides/security
+- Capacitor deep links guide: https://capacitorjs.com/docs/guides/deep-links
+- Next.js static export limitations: https://nextjs.org/docs/app/guides/static-exports
+- Next.js discussion — Server Actions in static export: https://github.com/vercel/next.js/discussions/67503
+- Capacitor `server.url` in production discussion: https://github.com/ionic-team/capacitor/discussions/4080
+- Apple App Store Guideline 4.2 — Minimum Functionality: https://developer.apple.com/app-store/review/guidelines/
+- better-auth-capacitor plugin: https://github.com/productdevbook/better-auth-capacitor
+- iOS WKWebView cookie issues (Capacitor issue tracker): https://github.com/ionic-team/capacitor/issues/1373
+- Capacitor CORS and `capacitor://localhost` origin: https://ionicframework.com/docs/troubleshooting/cors
+- Capacitor OAuth2 implementation guide: https://capgo.app/blog/5-steps-to-implement-oauth2-in-capacitor-apps/
+- Supabase discussion — OAuth redirects in Capacitor iOS/Android/Next.js: https://github.com/orgs/supabase/discussions/11548
+- Capawesome — iOS troubleshooting guide: https://capawesome.io/blog/troubleshooting-capacitor-ios-issues/
+- Capawesome — Android troubleshooting guide: https://capawesome.io/blog/troubleshooting-capacitor-android-issues/
+- Capawesome — AGP 9 build errors fix: https://capawesome.io/blog/how-to-fix-capacitor-plugin-build-errors-with-agp-9/
+
+---
+*Pitfalls research for: Adding Capacitor to Next.js 15 App Router (wedding-pov v1.1 mobile milestone)*
+*Researched: 2026-05-17*
