@@ -75,7 +75,7 @@ Plans:
 
 Plans:
 - [x] 05-01-PLAN.md — Server trust: add Capacitor origins to trustedOrigins in auth.ts, remove X-Frame-Options from next.config.ts
-- [ ] 05-02-PLAN.md — Capacitor scaffold: install packages, create capacitor.config.ts, cap add ios + android, WKAppBoundDomains
+- [x] 05-02-PLAN.md — Capacitor scaffold: install packages, create capacitor.config.ts, cap add ios + android, WKAppBoundDomains
 - [ ] 05-03-PLAN.md — Session persistence: install better-auth-capacitor, update auth-client.ts with platform detection
 - [ ] 05-04-PLAN.md — Google Drive OAuth: ConnectDriveButton with Browser.open, URL scheme registration, callback deep link redirect
 
@@ -125,7 +125,7 @@ Plans:
 | 2. Events + QR | v1.0 | 3/3 | Complete | 2026-05-04 |
 | 3. Guest Upload | v1.0 | 3/3 | Complete | 2026-05-04 |
 | 4. Launch Readiness | v1.0 | 2/2 | Complete | 2026-05-04 |
-| 5. Capacitor Infrastructure | v1.1 | 1/4 | In Progress|  |
+| 5. Capacitor Infrastructure | v1.1 | 2/4 | In Progress|  |
 | 6. Native Features | v1.1 | 0/TBD | Not started | - |
 | 7. Compliance + Submission Prep | v1.1 | 0/TBD | Not started | - |
 | 8. Distribution | v1.1 | 0/TBD | Not started | - |

@@ -17,8 +17,8 @@ Requirements for the Capacitor iOS/Android native app milestone.
 
 ### Capacitor Infrastructure (CAP)
 
-- [ ] **CAP-01**: Organizer can open the organizer dashboard in a native iOS app (Capacitor shell loading the live Railway URL)
-- [ ] **CAP-02**: Organizer can open the organizer dashboard in a native Android app (Capacitor shell loading the live Railway URL)
+- [x] **CAP-01**: Organizer can open the organizer dashboard in a native iOS app (Capacitor shell loading the live Railway URL)
+- [x] **CAP-02**: Organizer can open the organizer dashboard in a native Android app (Capacitor shell loading the live Railway URL)
 - [x] **CAP-03**: All API calls from the native app succeed (CORS configured for `capacitor://localhost` on iOS and `http://localhost` on Android)
 - [ ] **CAP-04**: Organizer session persists correctly across app restarts (Better Auth cookies work in the Capacitor webview)
 - [ ] **CAP-05**: Organizer can connect Google Drive from within the native app (OAuth opens in system browser via `@capacitor/browser`, not WKWebView)
@@ -81,8 +81,8 @@ Items acknowledged but not in scope for v1.1.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CAP-01 | Phase 5 | Pending |
-| CAP-02 | Phase 5 | Pending |
+| CAP-01 | Phase 5 | Complete |
+| CAP-02 | Phase 5 | Complete |
 | CAP-03 | Phase 5 | Complete |
 | CAP-04 | Phase 5 | Pending |
 | CAP-05 | Phase 5 | Pending |

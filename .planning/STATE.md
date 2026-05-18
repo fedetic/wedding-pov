@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Mobile App
-status: active
-stopped_at: "05-01-PLAN.md complete"
-last_updated: "2026-05-18T07:28:29Z"
-last_activity: "2026-05-18 — Phase 5 Plan 1 (CORS unblock) complete"
+status: executing
+stopped_at: 05-02-PLAN.md complete
+last_updated: "2026-05-18T07:37:30Z"
+last_activity: 2026-05-18 — Phase 5 Plan 2 (Capacitor native scaffold) complete
 progress:
   total_phases: 4
   completed_phases: 0
-  total_plans: 16
-  completed_plans: 1
-  percent: 6
+  total_plans: 4
+  completed_plans: 2
+  percent: 0
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-05-17)
 ## Current Position
 
 Phase: 5 of 8 (Capacitor Infrastructure)
-Plan: 1 of 4 complete
-Status: Active — executing plans
-Last activity: 2026-05-18 — Phase 5 Plan 1 (CORS unblock) complete
+Plan: 2 of 4 complete
+Status: Ready to execute
+Last activity: 2026-05-18 — Phase 5 Plan 2 (Capacitor native scaffold) complete
 
-Progress: [█░░░░░░░░░] 6% (v1.1)
+Progress: [█████░░░░░] 50%
 
 ## Performance Metrics
 
@@ -61,6 +61,10 @@ Progress: [█░░░░░░░░░] 6% (v1.1)
 - [v1.1 Research]: Google Drive OAuth must open via `@capacitor/browser` (SFSafariViewController/Chrome Custom Tabs) — WKWebView triggers `disallowed_useragent` rejection
 - [05-01]: Capacitor origin trust via Better Auth trustedOrigins (not static CORS headers) — static headers() cannot do dynamic origin reflection needed for credentials: 'include'
 - [05-01]: X-Frame-Options: DENY removed for Capacitor WebView Android compatibility — clickjacking risk accepted (auth-gated dashboard)
+- [05-02]: server.url points to Railway via process.env fallback — capacitor.config.ts is not a Next.js module; env not guaranteed at cap-sync time
+- [05-02]: ios/ and android/ committed to git — Capacitor convention; no secrets in generated native project dirs
+- [05-02]: WKAppBoundDomains scoped to wedding-pov-production.up.railway.app only — ITP relaxation minimal scope
+- [05-02]: Node 22 required for @capacitor/cli@8 CLI commands — installed via brew node@22; project server-side (Railway) stays on Node 20
 
 ### Pending Todos
 
@@ -84,6 +88,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-18T07:28:29Z
-Stopped at: 05-01-PLAN.md complete
-Resume file: .planning/phases/05-capacitor-infrastructure/05-02-PLAN.md
+Last session: 2026-05-18T07:37:09.020Z
+Stopped at: 05-02-PLAN.md complete
+Resume file: .planning/phases/05-capacitor-infrastructure/05-03-PLAN.md
