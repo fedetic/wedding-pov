@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Wedding POV</string>
+    <string name="title_activity_main">Wedding POV</string>
+    <string name="package_name">com.weddingpov.app</string>
+    <string name="custom_url_scheme">com.weddingpov.app</string>
+</resources>
