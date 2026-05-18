@@ -54,7 +54,7 @@ Plans:
 
 **Milestone Goal:** Publish the organizer dashboard as a native iOS and Android app via Capacitor, distributed through App Store and Google Play.
 
-- [ ] **Phase 5: Capacitor Infrastructure** — Capacitor setup, CORS fix, cookie persistence, Google Drive OAuth via system browser
+- [x] **Phase 5: Capacitor Infrastructure** — Capacitor setup, CORS fix, cookie persistence, Google Drive OAuth via system browser (completed 2026-05-18)
 - [ ] **Phase 6: Native Features** — QR share sheet, biometric auth, deep links, offline error screen
 - [ ] **Phase 7: Compliance + Submission Prep** — Icons/splash, privacy policy, PrivacyInfo.xcprivacy, account deletion, store metadata
 - [ ] **Phase 8: Distribution** — TestFlight, App Store submission, Play Store internal track, Google Play submission
@@ -77,7 +77,7 @@ Plans:
 - [x] 05-01-PLAN.md — Server trust: add Capacitor origins to trustedOrigins in auth.ts, remove X-Frame-Options from next.config.ts
 - [x] 05-02-PLAN.md — Capacitor scaffold: install packages, create capacitor.config.ts, cap add ios + android, WKAppBoundDomains
 - [x] 05-03-PLAN.md — Session persistence: install better-auth-capacitor, update auth-client.ts with platform detection
-- [ ] 05-04-PLAN.md — Google Drive OAuth: ConnectDriveButton with Browser.open, URL scheme registration, callback deep link redirect
+- [x] 05-04-PLAN.md — Google Drive OAuth: ConnectDriveButton with Browser.open, URL scheme registration, callback deep link redirect
 
 ### Phase 6: Native Features
 **Goal**: The native app provides genuine native capabilities — QR sharing via OS share sheet, biometric unlock, deep link routing, and a graceful offline state
@@ -125,7 +125,7 @@ Plans:
 | 2. Events + QR | v1.0 | 3/3 | Complete | 2026-05-04 |
 | 3. Guest Upload | v1.0 | 3/3 | Complete | 2026-05-04 |
 | 4. Launch Readiness | v1.0 | 2/2 | Complete | 2026-05-04 |
-| 5. Capacitor Infrastructure | v1.1 | 3/4 | In Progress|  |
+| 5. Capacitor Infrastructure | v1.1 | 4/4 | Complete   | 2026-05-18 |
 | 6. Native Features | v1.1 | 0/TBD | Not started | - |
 | 7. Compliance + Submission Prep | v1.1 | 0/TBD | Not started | - |
 | 8. Distribution | v1.1 | 0/TBD | Not started | - |
