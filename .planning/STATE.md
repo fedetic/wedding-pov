@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Mobile App
-status: planning
-stopped_at: Phase 5 context gathered
-last_updated: "2026-05-18T07:12:44.300Z"
-last_activity: 2026-05-17 — v1.1 roadmap created (Phases 5–8)
+status: active
+stopped_at: "05-01-PLAN.md complete"
+last_updated: "2026-05-18T07:28:29Z"
+last_activity: "2026-05-18 — Phase 5 Plan 1 (CORS unblock) complete"
 progress:
   total_phases: 4
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  total_plans: 16
+  completed_plans: 1
+  percent: 6
 ---
 
 # Project State
@@ -26,15 +26,16 @@ See: .planning/PROJECT.md (updated 2026-05-17)
 ## Current Position
 
 Phase: 5 of 8 (Capacitor Infrastructure)
-Plan: — (not yet planned)
-Status: Ready to plan
-Last activity: 2026-05-17 — v1.1 roadmap created (Phases 5–8)
+Plan: 1 of 4 complete
+Status: Active — executing plans
+Last activity: 2026-05-18 — Phase 5 Plan 1 (CORS unblock) complete
 
-Progress: [░░░░░░░░░░] 0% (v1.1)
+Progress: [█░░░░░░░░░] 6% (v1.1)
 
 ## Performance Metrics
 
 **Velocity (v1.0):**
+
 - Total plans completed: 12
 - Average duration: ~3 minutes
 - Total execution time: ~36 minutes
@@ -58,6 +59,8 @@ Progress: [░░░░░░░░░░] 0% (v1.1)
 - [v1.0]: `drive.file` scope (not `drive`) — avoids weeks-long Google security review
 - [v1.1 Research]: `server.url` pointing to Railway (not static export) — Server Actions, cookies(), and auth middleware are incompatible with `output: 'export'`
 - [v1.1 Research]: Google Drive OAuth must open via `@capacitor/browser` (SFSafariViewController/Chrome Custom Tabs) — WKWebView triggers `disallowed_useragent` rejection
+- [05-01]: Capacitor origin trust via Better Auth trustedOrigins (not static CORS headers) — static headers() cannot do dynamic origin reflection needed for credentials: 'include'
+- [05-01]: X-Frame-Options: DENY removed for Capacitor WebView Android compatibility — clickjacking risk accepted (auth-gated dashboard)
 
 ### Pending Todos
 
@@ -65,7 +68,7 @@ None yet.
 
 ### Blockers/Concerns
 
-- **CAP-03 (CORS)**: `capacitor://localhost` and `http://localhost` must be added to Railway CORS allowlist before any API calls work — Phase 5 blocker
+- ~~**CAP-03 (CORS)**~~ RESOLVED in 05-01: Capacitor origins added to Better Auth trustedOrigins, X-Frame-Options removed
 - **CAP-05 (OAuth)**: WKWebView blocks Google OAuth — must validate `@capacitor/browser` flow on real device (emulator may not reproduce)
 - **CAP-04 (cookies)**: iOS ITP may block Better Auth HTTP-only cookies cross-origin — must validate on real device in Phase 5 before building on top
 - **NATIVE-03 (deep links)**: Requires serving `apple-app-site-association` and `assetlinks.json` from Railway + Apple Developer portal configuration — coordinate with Phase 6
@@ -81,6 +84,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-18T07:12:44.292Z
-Stopped at: Phase 5 context gathered
-Resume file: .planning/phases/05-capacitor-infrastructure/05-CONTEXT.md
+Last session: 2026-05-18T07:28:29Z
+Stopped at: 05-01-PLAN.md complete
+Resume file: .planning/phases/05-capacitor-infrastructure/05-02-PLAN.md
