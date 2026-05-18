@@ -71,8 +71,13 @@ Plans:
   3. Organizer can log in and all API calls succeed in both native apps (no CORS errors for `capacitor://localhost` on iOS and `http://localhost` on Android)
   4. Organizer session persists after force-quitting and relaunching the app (Better Auth cookie survives WKWebView across restarts)
   5. Organizer can complete the Google Drive OAuth flow from within the native app (SFSafariViewController/Chrome Custom Tab opens, OAuth completes, and app resumes with Drive connected)
-**Plans**: TBD
-**UI hint**: yes
+**Plans**: 4 plans
+
+Plans:
+- [ ] 05-01-PLAN.md — Server trust: add Capacitor origins to trustedOrigins in auth.ts, remove X-Frame-Options from next.config.ts
+- [ ] 05-02-PLAN.md — Capacitor scaffold: install packages, create capacitor.config.ts, cap add ios + android, WKAppBoundDomains
+- [ ] 05-03-PLAN.md — Session persistence: install better-auth-capacitor, update auth-client.ts with platform detection
+- [ ] 05-04-PLAN.md — Google Drive OAuth: ConnectDriveButton with Browser.open, URL scheme registration, callback deep link redirect
 
 ### Phase 6: Native Features
 **Goal**: The native app provides genuine native capabilities — QR sharing via OS share sheet, biometric unlock, deep link routing, and a graceful offline state
