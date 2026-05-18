@@ -20,7 +20,9 @@ export async function GET(request: NextRequest) {
   // This is unforgeable without the ENCRYPTION_KEY, so it acts as both
   // CSRF protection AND a way to recover the userId in the callback —
   // without relying on a cookie surviving Google's redirect chain.
-  const state = encrypt(session.user.id);
+  const isMobile = new URL(request.url).searchParams.get("mobile") === "1";
+  const statePayload = isMobile ? `${session.user.id}:mobile` : session.user.id;
+  const state = encrypt(statePayload);
 
   const authUrl = oauth2Client.generateAuthUrl({
     access_type: "offline",

@@ -8,6 +8,7 @@ import { EventList } from "@/components/events/EventList";
 import { EventCreatedBanner } from "@/components/events/EventCreatedBanner";
 import { SignOutButton } from "@/components/SignOutButton";
 import { DisconnectDriveButton } from "@/components/DisconnectDriveButton";
+import { ConnectDriveButton } from "@/components/ConnectDriveButton";
 
 export const metadata = { title: "Dashboard — Wedding POV" };
 
@@ -71,12 +72,7 @@ export default async function DashboardPage({
             <p className="text-sm text-gray-600 mb-3">
               Connect your Google Drive to enable photo uploads for your events.
             </p>
-            <a
-              href="/api/drive/connect"
-              className="inline-block bg-black text-white rounded px-4 py-2 text-sm font-semibold hover:bg-gray-800"
-            >
-              Connect Google Drive
-            </a>
+            <ConnectDriveButton appUrl={process.env.NEXT_PUBLIC_APP_URL!} />
           </div>
         )}
       </section>

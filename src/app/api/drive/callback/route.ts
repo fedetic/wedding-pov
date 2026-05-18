@@ -14,14 +14,29 @@ export async function GET(request: NextRequest) {
   const appBase = process.env.BETTER_AUTH_URL!;
 
   if (error || !code || !state) {
+    const ua = request.headers.get("user-agent") ?? "";
+    const looksLikeMobile = ua.includes("iPhone") || ua.includes("Android");
     console.error("[drive/callback] OAuth error or missing params:", { error, hasCode: !!code, hasState: !!state });
+    if (looksLikeMobile) {
+      return new Response(null, {
+        status: 302,
+        headers: { Location: "com.weddingpov.app://oauth-callback?error=true" },
+      });
+    }
     return NextResponse.redirect(new URL("/dashboard?drive=error", appBase));
   }
 
   // ── Verify state: decrypt to recover userId (AES-256-GCM — unforgeable) ──
   let userId: string;
+  let isMobile = false;
   try {
-    userId = decrypt(state);
+    const decrypted = decrypt(state);
+    if (decrypted.endsWith(":mobile")) {
+      userId = decrypted.slice(0, -7);
+      isMobile = true;
+    } else {
+      userId = decrypted;
+    }
   } catch {
     console.error("[drive/callback] State decryption failed — possible CSRF attempt");
     return NextResponse.redirect(new URL("/dashboard?drive=error", appBase));
@@ -74,5 +89,11 @@ export async function GET(request: NextRequest) {
     });
 
   console.info("[drive/callback] Drive connected for userId:", userId);
+  if (isMobile) {
+    return new Response(null, {
+      status: 302,
+      headers: { Location: "com.weddingpov.app://oauth-callback?success=true" },
+    });
+  }
   return NextResponse.redirect(new URL("/dashboard?drive=connected", appBase));
 }
