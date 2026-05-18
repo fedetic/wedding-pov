@@ -51,5 +51,14 @@
 	<array>
 		<string>wedding-pov-production.up.railway.app</string>
 	</array>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.weddingpov.app</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>
