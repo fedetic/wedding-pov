@@ -9,7 +9,7 @@ const config: CapacitorConfig = {
   appName: "Wedding POV",
   webDir: "out", // fallback placeholder — not used when server.url is set
   server: {
-    url: process.env.NEXT_PUBLIC_APP_URL ?? "https://wedding-pov-production.up.railway.app",
+    url: "https://pov.jjwedding.nl",
     cleartext: false, // Railway is HTTPS; no plaintext HTTP allowed
   },
   ios: {

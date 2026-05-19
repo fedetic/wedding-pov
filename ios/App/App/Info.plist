@@ -49,6 +49,7 @@
 	<true/>
 	<key>WKAppBoundDomains</key>
 	<array>
+		<string>pov.jjwedding.nl</string>
 		<string>wedding-pov-production.up.railway.app</string>
 	</array>
 	<key>CFBundleURLTypes</key>
