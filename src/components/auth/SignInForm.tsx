@@ -20,7 +20,6 @@ export function SignInForm() {
       const { error } = await authClient.signIn.email({
         email,
         password,
-        callbackURL: "/dashboard",
       });
 
       if (error) {
