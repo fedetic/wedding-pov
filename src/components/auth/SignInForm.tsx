@@ -16,19 +16,24 @@ export function SignInForm() {
     setError(null);
     setLoading(true);
 
-    const { error } = await authClient.signIn.email({
-      email,
-      password,
-      callbackURL: "/dashboard",
-    });
+    try {
+      const { error } = await authClient.signIn.email({
+        email,
+        password,
+        callbackURL: "/dashboard",
+      });
 
-    if (error) {
-      setError(error.message ?? "Sign in failed. Check your credentials and try again.");
+      if (error) {
+        setError(error.message ?? "Sign in failed. Check your credentials and try again.");
+        setLoading(false);
+        return;
+      }
+
+      router.push("/dashboard");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unexpected error — check your connection.");
       setLoading(false);
-      return;
     }
-
-    router.push("/dashboard");
   }
 
   return (
