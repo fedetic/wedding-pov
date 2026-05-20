@@ -72,7 +72,7 @@ export default async function DashboardPage({
             <p className="text-sm text-gray-600 mb-3">
               Connect your Google Drive to enable photo uploads for your events.
             </p>
-            <ConnectDriveButton appUrl={process.env.NEXT_PUBLIC_APP_URL!} />
+            <ConnectDriveButton />
           </div>
         )}
       </section>

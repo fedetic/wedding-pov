@@ -5,11 +5,7 @@ import { Browser } from "@capacitor/browser";
 import { App } from "@capacitor/app";
 import { useEffect } from "react";
 
-interface ConnectDriveButtonProps {
-  appUrl: string;
-}
-
-export function ConnectDriveButton({ appUrl }: ConnectDriveButtonProps) {
+export function ConnectDriveButton() {
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
 
@@ -30,7 +26,7 @@ export function ConnectDriveButton({ appUrl }: ConnectDriveButtonProps) {
       <button
         onClick={async () => {
           await Browser.open({
-            url: `${appUrl}/api/drive/connect?mobile=1`,
+            url: `${window.location.origin}/api/drive/connect?mobile=1`,
             presentationStyle: "popover",
           });
         }}
