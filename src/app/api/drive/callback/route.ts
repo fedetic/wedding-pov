@@ -18,10 +18,15 @@ export async function GET(request: NextRequest) {
     const looksLikeMobile = ua.includes("iPhone") || ua.includes("Android");
     console.error("[drive/callback] OAuth error or missing params:", { error, hasCode: !!code, hasState: !!state });
     if (looksLikeMobile) {
-      return new Response(null, {
-        status: 302,
-        headers: { Location: "com.weddingpov.app://oauth-callback?error=true" },
-      });
+      const html = `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Returning to app…</title></head>
+<body>
+<script>window.location.href = "com.weddingpov.app://oauth-callback?error=true";</script>
+<p><a href="com.weddingpov.app://oauth-callback?error=true">Tap here to return to app.</a></p>
+</body>
+</html>`;
+      return new Response(html, { status: 200, headers: { "Content-Type": "text/html" } });
     }
     return NextResponse.redirect(new URL("/dashboard?drive=error", appBase));
   }
@@ -90,9 +95,21 @@ export async function GET(request: NextRequest) {
 
   console.info("[drive/callback] Drive connected for userId:", userId);
   if (isMobile) {
-    return new Response(null, {
-      status: 302,
-      headers: { Location: "com.weddingpov.app://oauth-callback?success=true" },
+    // SFSafariViewController (iOS) and Chrome Custom Tab (Android) cannot follow
+    // a server-side 302 to a custom URL scheme — they just show the raw URL.
+    // Landing on an HTTPS page first and triggering the scheme via JS is reliable.
+    const html = `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Returning to app…</title></head>
+<body>
+<script>window.location.href = "com.weddingpov.app://oauth-callback?success=true";</script>
+<p>Redirecting back to the app…<br>
+<a href="com.weddingpov.app://oauth-callback?success=true">Tap here if not redirected.</a></p>
+</body>
+</html>`;
+    return new Response(html, {
+      status: 200,
+      headers: { "Content-Type": "text/html" },
     });
   }
   return NextResponse.redirect(new URL("/dashboard?drive=connected", appBase));
