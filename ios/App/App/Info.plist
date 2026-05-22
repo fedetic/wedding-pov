@@ -61,5 +61,7 @@
 			</array>
 		</dict>
 	</array>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Wedding POV uses Face ID to protect your account.</string>
 </dict>
 </plist>

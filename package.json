@@ -12,6 +12,7 @@
     "cap:open:android": "npx cap open android"
   },
   "dependencies": {
+    "@aparajita/capacitor-biometric-auth": "^10.0.0",
     "@better-auth/drizzle-adapter": "^1.6.9",
     "@capacitor/android": "^8.3.4",
     "@capacitor/app": "^8.1.0",
