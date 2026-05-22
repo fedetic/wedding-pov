@@ -96,9 +96,9 @@ export function BiometricLockScreen() {
     }
   }, []);
 
-  useEffect(() => {
-    attempt();
-  }, [attempt]);
+  // Run once on cold launch — intentional single fire per mount.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { void attempt(); }, [attempt]);
 
   if (state === "checking" || state === "skip" || state === "unlocked" || state === "fallback") {
     return null;

@@ -4,6 +4,7 @@ import { googleTokens } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { EventList } from "@/components/events/EventList";
 import { EventCreatedBanner } from "@/components/events/EventCreatedBanner";
 import { SignOutButton } from "@/components/SignOutButton";
@@ -39,7 +40,10 @@ export default async function DashboardPage({
         <h1 className="text-2xl font-semibold">
           Welcome, {session.user.name}
         </h1>
-        <SignOutButton />
+        <div className="flex items-center gap-4">
+          <Link href="/dashboard/settings" className="text-sm font-normal text-gray-500 hover:text-black">Settings</Link>
+          <SignOutButton />
+        </div>
       </div>
       <p className="text-sm text-gray-500 mb-8">{session.user.email}</p>
 

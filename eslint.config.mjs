@@ -12,6 +12,11 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // GSD tooling binaries — not project source, uses CommonJS require()
+    ".claude/**",
+    ".github/**",
+    // Android build artifacts
+    "android/app/build/**",
   ]),
 ]);
 
