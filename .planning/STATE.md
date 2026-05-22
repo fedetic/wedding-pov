@@ -4,13 +4,13 @@ milestone: v1.1
 milestone_name: Mobile App
 status: executing
 stopped_at: Phase 6 UI-SPEC approved
-last_updated: "2026-05-22T22:13:53.513Z"
+last_updated: "2026-05-22T22:28:24.065Z"
 last_activity: 2026-05-22
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 8
-  completed_plans: 6
+  completed_plans: 7
   percent: 25
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-05-17)
 ## Current Position
 
 Phase: 6 of 8 (Native Features)
-Plan: 2 of 4 complete
+Plan: 3 of 4 complete
 Status: Ready to execute
 Last activity: 2026-05-22
 
-Progress: [████████░░] 75%
+Progress: [█████████░] 88%
 
 ## Performance Metrics
 
@@ -53,6 +53,7 @@ Progress: [████████░░] 75%
 | Phase 05-capacitor-infrastructure P03 | 5min | 1 tasks | 3 files |
 | Phase 06-native-features P01 | 5min | 2 tasks | 7 files |
 | Phase 06-native-features P02 | 4min | 3 tasks | 7 files |
+| Phase 06-native-features P03 | 10min | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -76,6 +77,10 @@ Progress: [████████░░] 75%
 - [06-02]: AASA paths scoped to /e/* only — avoids intercepting landing page and other non-app paths (Pitfall 7)
 - [06-02]: ANDROID_CERT_FINGERPRINT placeholder in assetlinks.json — release keystore not yet generated; Android App Links won't verify until Phase 8
 - [06-02]: .env.example force-added via git add -f — .gitignore has .env* catch-all but .env.example contains only blank placeholders with no secrets
+- [Phase ?]: async cold-launch attempt() is intentionally fired once from useEffect; setState calls inside are async, no cascade
+- [Phase ?]: [06-03]: BiometricToggle uses Capacitor.isNativePlatform() in render (not useState+useEffect) — canonical pattern per 06-01
+- [Phase ?]: [06-03]: eslint.config.mjs ignores .claude/, .github/, android/app/build/ — GSD tooling and Android build artifacts
+- [Phase ?]: [06-03]: iOS uses SPM not CocoaPods — biometric plugin in Package.swift as AparajitaCapacitorBiometricAuth
 
 ### Pending Todos
 
@@ -99,6 +104,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-22T22:13:53.470Z
+Last session: 2026-05-22T22:28:24.061Z
 Stopped at: Phase 6 UI-SPEC approved
 Resume file: None
