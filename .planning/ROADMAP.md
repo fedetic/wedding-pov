@@ -88,8 +88,14 @@ Plans:
   2. Organizer can enable Face ID or Touch ID in app settings; subsequent app opens require biometric confirmation before showing the dashboard
   3. Opening a `weddingpov.app/e/[slug]` link on an iOS or Android device with the app installed launches the native app directly to that event (Universal Links and App Links both work; server-side AASA and assetlinks.json files are served correctly)
   4. When the device has no internet connection, the app shows a static error screen with a retry button instead of a blank white screen
-**Plans**: TBD
+**Plans**: 4 plans
 **UI hint**: yes
+
+Plans:
+- [ ] 06-01-PLAN.md — QR share sheet (NATIVE-01): install @capacitor/share + @capacitor/filesystem, add Share button to QRModal with handleShare() writing PNG to Filesystem Cache and invoking native share sheet
+- [ ] 06-02-PLAN.md — Deep link infra (NATIVE-03): AASA + assetlinks.json Route Handlers with Content-Type: application/json, App.entitlements with Associated Domains, AndroidManifest autoVerify intent filters for both domains, DeepLinkHandler.tsx component
+- [ ] 06-03-PLAN.md — Biometric unlock (NATIVE-02): install @aparajita/capacitor-biometric-auth, NSFaceIDUsageDescription, /dashboard/settings page with toggle, BiometricLockScreen component, Settings link in dashboard header
+- [ ] 06-04-PLAN.md — Layout integration (NATIVE-04 + final wiring): OfflineOverlay with reactive @capacitor/network listener, NativeShell wrapper, mount in src/app/layout.tsx
 
 ### Phase 7: Compliance + Submission Prep
 **Goal**: Both apps meet every App Store and Google Play requirement for submission — icons, privacy materials, account deletion, and complete store listings are in place
@@ -126,6 +132,6 @@ Plans:
 | 3. Guest Upload | v1.0 | 3/3 | Complete | 2026-05-04 |
 | 4. Launch Readiness | v1.0 | 2/2 | Complete | 2026-05-04 |
 | 5. Capacitor Infrastructure | v1.1 | 4/4 | Complete   | 2026-05-18 |
-| 6. Native Features | v1.1 | 0/TBD | Not started | - |
+| 6. Native Features | v1.1 | 0/4 | Not started | - |
 | 7. Compliance + Submission Prep | v1.1 | 0/TBD | Not started | - |
 | 8. Distribution | v1.1 | 0/TBD | Not started | - |
