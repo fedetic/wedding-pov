@@ -93,7 +93,7 @@ Plans:
 
 Plans:
 - [x] 06-01-PLAN.md — QR share sheet (NATIVE-01): install @capacitor/share + @capacitor/filesystem, add Share button to QRModal with handleShare() writing PNG to Filesystem Cache and invoking native share sheet
-- [ ] 06-02-PLAN.md — Deep link infra (NATIVE-03): AASA + assetlinks.json Route Handlers with Content-Type: application/json, App.entitlements with Associated Domains, AndroidManifest autoVerify intent filters for both domains, DeepLinkHandler.tsx component
+- [x] 06-02-PLAN.md — Deep link infra (NATIVE-03): AASA + assetlinks.json Route Handlers with Content-Type: application/json, App.entitlements with Associated Domains, AndroidManifest autoVerify intent filters for both domains, DeepLinkHandler.tsx component
 - [ ] 06-03-PLAN.md — Biometric unlock (NATIVE-02): install @aparajita/capacitor-biometric-auth, NSFaceIDUsageDescription, /dashboard/settings page with toggle, BiometricLockScreen component, Settings link in dashboard header
 - [ ] 06-04-PLAN.md — Layout integration (NATIVE-04 + final wiring): OfflineOverlay with reactive @capacitor/network listener, NativeShell wrapper, mount in src/app/layout.tsx
 
@@ -132,6 +132,6 @@ Plans:
 | 3. Guest Upload | v1.0 | 3/3 | Complete | 2026-05-04 |
 | 4. Launch Readiness | v1.0 | 2/2 | Complete | 2026-05-04 |
 | 5. Capacitor Infrastructure | v1.1 | 4/4 | Complete   | 2026-05-18 |
-| 6. Native Features | v1.1 | 1/4 | In Progress|  |
+| 6. Native Features | v1.1 | 2/4 | In Progress|  |
 | 7. Compliance + Submission Prep | v1.1 | 0/TBD | Not started | - |
 | 8. Distribution | v1.1 | 0/TBD | Not started | - |

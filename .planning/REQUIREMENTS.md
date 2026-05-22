@@ -27,7 +27,7 @@ Requirements for the Capacitor iOS/Android native app milestone.
 
 - [x] **NATIVE-01**: Organizer can share the event QR code PNG via the native OS share sheet (Messages, AirDrop, WhatsApp, email, etc.)
 - [ ] **NATIVE-02**: Organizer can enable Face ID / Touch ID to unlock the app on subsequent opens (falls back to email/password if biometrics unavailable)
-- [ ] **NATIVE-03**: Opening a `weddingpov.app/e/[slug]` link on a device with the app installed opens the native app directly (Universal Links / App Links)
+- [x] **NATIVE-03**: Opening a `weddingpov.app/e/[slug]` link on a device with the app installed opens the native app directly (Universal Links / App Links)
 - [ ] **NATIVE-04**: Native app shows a clear offline error screen with a retry button when there is no internet connection
 
 ### App Store & Play Store Compliance (COMPLY)
@@ -88,7 +88,7 @@ Items acknowledged but not in scope for v1.1.
 | CAP-05 | Phase 5 | Complete |
 | NATIVE-01 | Phase 6 | Complete |
 | NATIVE-02 | Phase 6 | Pending |
-| NATIVE-03 | Phase 6 | Pending |
+| NATIVE-03 | Phase 6 | Complete |
 | NATIVE-04 | Phase 6 | Pending |
 | COMPLY-01 | Phase 7 | Pending |
 | COMPLY-02 | Phase 7 | Pending |

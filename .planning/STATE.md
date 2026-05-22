@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Mobile App
-status: verifying
+status: executing
 stopped_at: Phase 6 UI-SPEC approved
-last_updated: "2026-05-22T22:04:05.890Z"
+last_updated: "2026-05-22T22:13:53.513Z"
 last_activity: 2026-05-22
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 8
-  completed_plans: 5
+  completed_plans: 6
   percent: 25
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-05-17)
 ## Current Position
 
 Phase: 6 of 8 (Native Features)
-Plan: 1 of 4 complete
-Status: Executing
-Last activity: 2026-05-23
+Plan: 2 of 4 complete
+Status: Ready to execute
+Last activity: 2026-05-22
 
-Progress: [██████░░░░] 63%
+Progress: [████████░░] 75%
 
 ## Performance Metrics
 
@@ -52,6 +52,7 @@ Progress: [██████░░░░] 63%
 *Updated after each plan completion*
 | Phase 05-capacitor-infrastructure P03 | 5min | 1 tasks | 3 files |
 | Phase 06-native-features P01 | 5min | 2 tasks | 7 files |
+| Phase 06-native-features P02 | 4min | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -71,6 +72,10 @@ Progress: [██████░░░░] 63%
 - [Phase ?]: [05-03]: @capacitor/network and @capacitor/preferences installed as required peer deps of better-auth-capacitor/client
 - [06-01]: Capacitor.isNativePlatform() called directly in render (not useState+useEffect) — matches ConnectDriveButton.tsx canonical pattern, avoids react-hooks/set-state-in-effect lint error
 - [06-01]: handleShare() silently swallows all errors — per UI-SPEC Interaction States; user cancel of OS share sheet is not an error condition
+- [06-02]: Both weddingpov.app and pov.jjwedding.nl configured for Associated Domains and Android App Links — pov.jjwedding.nl is server.url/QR URL origin; weddingpov.app is public marketing domain
+- [06-02]: AASA paths scoped to /e/* only — avoids intercepting landing page and other non-app paths (Pitfall 7)
+- [06-02]: ANDROID_CERT_FINGERPRINT placeholder in assetlinks.json — release keystore not yet generated; Android App Links won't verify until Phase 8
+- [06-02]: .env.example force-added via git add -f — .gitignore has .env* catch-all but .env.example contains only blank placeholders with no secrets
 
 ### Pending Todos
 
@@ -81,7 +86,7 @@ None yet.
 - ~~**CAP-03 (CORS)**~~ RESOLVED in 05-01: Capacitor origins added to Better Auth trustedOrigins, X-Frame-Options removed
 - **CAP-05 (OAuth)**: WKWebView blocks Google OAuth — must validate `@capacitor/browser` flow on real device (emulator may not reproduce)
 - **CAP-04 (cookies)**: iOS ITP may block Better Auth HTTP-only cookies cross-origin — must validate on real device in Phase 5 before building on top
-- **NATIVE-03 (deep links)**: Requires serving `apple-app-site-association` and `assetlinks.json` from Railway + Apple Developer portal configuration — coordinate with Phase 6
+- ~~**NATIVE-03 (deep links)**~~ RESOLVED in 06-02: AASA + assetlinks.json route handlers deployed, iOS entitlements + Android intent filters configured; needs APPLE_TEAM_ID and ANDROID_CERT_FINGERPRINT in Railway env vars to fully verify
 - **App Store 4.2 risk**: Pure webview wrapper can be rejected for minimum functionality — QR share sheet (NATIVE-01) + biometrics (NATIVE-02) are the mitigation
 
 ## Deferred Items
@@ -94,6 +99,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-22T22:04:05.885Z
+Last session: 2026-05-22T22:13:53.470Z
 Stopped at: Phase 6 UI-SPEC approved
 Resume file: None
