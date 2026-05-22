@@ -29,6 +29,20 @@
                 <data android:scheme="com.weddingpov.app" />
             </intent-filter>
 
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="weddingpov.app" android:pathPrefix="/e/" />
+            </intent-filter>
+
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="pov.jjwedding.nl" android:pathPrefix="/e/" />
+            </intent-filter>
+
         </activity>
 
         <provider
