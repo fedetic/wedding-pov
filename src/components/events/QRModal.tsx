@@ -2,6 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import QRCode from "qrcode";
+import { Capacitor } from "@capacitor/core";
+import { Filesystem, Directory } from "@capacitor/filesystem";
+import { Share } from "@capacitor/share";
 
 type QRModalProps = {
   event: { name: string; slug: string };
@@ -48,6 +51,30 @@ export function QRModal({ event, onClose }: QRModalProps) {
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
+  }
+
+  async function handleShare() {
+    if (!dataUrl) return;
+    try {
+      const base64 = dataUrl.split(",")[1];
+      const fileName = `qr-${event.slug}.png`;
+      await Filesystem.writeFile({
+        path: fileName,
+        data: base64,
+        directory: Directory.Cache,
+      });
+      const { uri } = await Filesystem.getUri({
+        path: fileName,
+        directory: Directory.Cache,
+      });
+      await Share.share({
+        files: [uri],
+        text: guestUrl,
+        dialogTitle: "Share QR code",
+      });
+    } catch {
+      // OS-level share sheet errors (user cancel, etc.) are silent per UI-SPEC §Interaction States.
+    }
   }
 
   async function handleCopy() {
@@ -125,6 +152,14 @@ export function QRModal({ event, onClose }: QRModalProps) {
           >
             Download QR code
           </button>
+          {Capacitor.isNativePlatform() && (
+            <button
+              type="button"
+              onClick={handleShare}
+              disabled={!dataUrl}
+              className="w-full bg-black text-white text-sm font-semibold py-2 px-4 rounded hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
+            >Share QR code</button>
+          )}
           <button
             type="button"
             onClick={onClose}
