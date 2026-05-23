@@ -32,7 +32,7 @@ Requirements for the Capacitor iOS/Android native app milestone.
 
 ### App Store & Play Store Compliance (COMPLY)
 
-- [ ] **COMPLY-01**: App has icons and splash screens for all required iOS and Android sizes (generated from a 1024×1024 master)
+- [x] **COMPLY-01**: App has icons and splash screens for all required iOS and Android sizes (generated from a 1024×1024 master)
 - [x] **COMPLY-02**: Public privacy policy page at `/privacy` on Railway is accessible from within the native app
 - [x] **COMPLY-03**: iOS app includes `PrivacyInfo.xcprivacy` privacy manifest declaring all required-reason APIs used by Capacitor and its plugins
 - [x] **COMPLY-04**: Organizer can delete their account and all associated data (Better Auth user, Drive credentials, events, upload records) from within the native app
@@ -90,7 +90,7 @@ Items acknowledged but not in scope for v1.1.
 | NATIVE-02 | Phase 6 | Complete |
 | NATIVE-03 | Phase 6 | Complete |
 | NATIVE-04 | Phase 6 | Pending |
-| COMPLY-01 | Phase 7 | Pending |
+| COMPLY-01 | Phase 7 | Complete |
 | COMPLY-02 | Phase 7 | Complete |
 | COMPLY-03 | Phase 7 | Complete |
 | COMPLY-04 | Phase 7 | Complete |
@@ -109,4 +109,4 @@ Items acknowledged but not in scope for v1.1.
 ---
 
 *Requirements defined: 2026-05-17*
-*Last updated: 2026-05-23 — COMPLY-02, COMPLY-03, COMPLY-06 marked complete after Plan 07-01; COMPLY-04 marked complete after Plan 07-02*
+*Last updated: 2026-05-23 — COMPLY-02, COMPLY-03, COMPLY-06 marked complete after Plan 07-01; COMPLY-04 marked complete after Plan 07-02; + COMPLY-01 (07-03)*
