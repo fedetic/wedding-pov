@@ -28,4 +28,13 @@ export const auth = betterAuth({
     minPasswordLength: 8,
     requireEmailVerification: false, // disabled for v1 — no email provider configured
   },
+  user: {
+    deleteUser: {
+      enabled: true,
+      // Fresh session (< 24h) satisfies sensitiveSessionMiddleware — no password required.
+      // No sendDeleteAccountVerification: email is not configured in v1.
+      // No beforeDelete hook: DB cascade in schema.ts covers all related tables
+      // (sessions, accounts, googleTokens, events, uploadRecords).
+    },
+  },
 });
