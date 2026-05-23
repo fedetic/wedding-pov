@@ -33,11 +33,11 @@ Requirements for the Capacitor iOS/Android native app milestone.
 ### App Store & Play Store Compliance (COMPLY)
 
 - [ ] **COMPLY-01**: App has icons and splash screens for all required iOS and Android sizes (generated from a 1024×1024 master)
-- [ ] **COMPLY-02**: Public privacy policy page at `/privacy` on Railway is accessible from within the native app
-- [ ] **COMPLY-03**: iOS app includes `PrivacyInfo.xcprivacy` privacy manifest declaring all required-reason APIs used by Capacitor and its plugins
+- [x] **COMPLY-02**: Public privacy policy page at `/privacy` on Railway is accessible from within the native app
+- [x] **COMPLY-03**: iOS app includes `PrivacyInfo.xcprivacy` privacy manifest declaring all required-reason APIs used by Capacitor and its plugins
 - [ ] **COMPLY-04**: Organizer can delete their account and all associated data (Better Auth user, Drive credentials, events, upload records) from within the native app
 - [ ] **COMPLY-05**: App Store and Google Play listings have complete metadata (name, description, screenshots at required sizes, category, support URL, privacy URL)
-- [ ] **COMPLY-06**: Android build targets SDK 35 (compileSdkVersion 35, targetSdkVersion 35) as required by Google Play for new submissions
+- [x] **COMPLY-06**: Android build targets SDK 35 (compileSdkVersion 35, targetSdkVersion 35) as required by Google Play for new submissions
 
 ### Distribution (DIST)
 
@@ -91,11 +91,11 @@ Items acknowledged but not in scope for v1.1.
 | NATIVE-03 | Phase 6 | Complete |
 | NATIVE-04 | Phase 6 | Pending |
 | COMPLY-01 | Phase 7 | Pending |
-| COMPLY-02 | Phase 7 | Pending |
-| COMPLY-03 | Phase 7 | Pending |
+| COMPLY-02 | Phase 7 | Complete |
+| COMPLY-03 | Phase 7 | Complete |
 | COMPLY-04 | Phase 7 | Pending |
 | COMPLY-05 | Phase 7 | Pending |
-| COMPLY-06 | Phase 7 | Pending |
+| COMPLY-06 | Phase 7 | Complete |
 | DIST-01 | Phase 8 | Pending |
 | DIST-02 | Phase 8 | Pending |
 | DIST-03 | Phase 8 | Pending |
@@ -109,4 +109,4 @@ Items acknowledged but not in scope for v1.1.
 ---
 
 *Requirements defined: 2026-05-17*
-*Last updated: 2026-05-17 — traceability updated after roadmap creation*
+*Last updated: 2026-05-23 — COMPLY-02, COMPLY-03, COMPLY-06 marked complete after Plan 07-01*
