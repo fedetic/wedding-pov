@@ -108,7 +108,13 @@ Plans:
   4. Organizer can delete their account from within the native app and the backend removes the Better Auth user record, Drive credentials, all events, and all upload records
   5. App Store Connect and Google Play Console listings have complete metadata — name, description, category, screenshots at required sizes, support URL, and privacy policy URL
   6. Android `build.gradle` sets `compileSdkVersion 35` and `targetSdkVersion 35` (Gradle build succeeds; no Play Store SDK version rejection)
-**Plans**: TBD
+**Plans**: 4 plans
+
+Plans:
+- [ ] 07-01-PLAN.md — Privacy page at /privacy, PrivacyInfo.xcprivacy with CA92.1, verify Android SDK 35+ (COMPLY-02, COMPLY-03, COMPLY-06)
+- [ ] 07-02-PLAN.md — Enable better-auth deleteUser endpoint, DeleteAccountButton with two-step confirm + SESSION_EXPIRED handling, Settings page wiring (COMPLY-04)
+- [ ] 07-03-PLAN.md — @capacitor/assets generate from assets/logo.png; iOS + Android icon and splash assets (COMPLY-01)
+- [ ] 07-04-PLAN.md — App Store Connect + Google Play Console listings populated, STORE-LISTINGS.md snapshot (COMPLY-05)
 
 ### Phase 8: Distribution
 **Goal**: Both apps are published — iOS is live on the App Store and Android is live on Google Play after passing review
@@ -133,5 +139,5 @@ Plans:
 | 4. Launch Readiness | v1.0 | 2/2 | Complete | 2026-05-04 |
 | 5. Capacitor Infrastructure | v1.1 | 4/4 | Complete   | 2026-05-18 |
 | 6. Native Features | v1.1 | 3/4 | In Progress|  |
-| 7. Compliance + Submission Prep | v1.1 | 0/TBD | Not started | - |
+| 7. Compliance + Submission Prep | v1.1 | 0/4 | Pending | - |
 | 8. Distribution | v1.1 | 0/TBD | Not started | - |
