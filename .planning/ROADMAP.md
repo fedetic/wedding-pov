@@ -56,7 +56,7 @@ Plans:
 
 - [x] **Phase 5: Capacitor Infrastructure** — Capacitor setup, CORS fix, cookie persistence, Google Drive OAuth via system browser (completed 2026-05-18)
 - [ ] **Phase 6: Native Features** — QR share sheet, biometric auth, deep links, offline error screen
-- [ ] **Phase 7: Compliance + Submission Prep** — Icons/splash, privacy policy, PrivacyInfo.xcprivacy, account deletion, store metadata
+- [x] **Phase 7: Compliance + Submission Prep** — Icons/splash, privacy policy, PrivacyInfo.xcprivacy, account deletion, store metadata (completed 2026-05-24)
 - [ ] **Phase 8: Distribution** — TestFlight, App Store submission, Play Store internal track, Google Play submission
 
 ## Phase Details
@@ -114,7 +114,7 @@ Plans:
 - [x] 07-01-PLAN.md — Privacy page at /privacy, PrivacyInfo.xcprivacy with CA92.1, verify Android SDK 35+ (COMPLY-02, COMPLY-03, COMPLY-06)
 - [x] 07-02-PLAN.md — Enable better-auth deleteUser endpoint, DeleteAccountButton with two-step confirm + SESSION_EXPIRED handling, Settings page wiring (COMPLY-04)
 - [x] 07-03-PLAN.md — @capacitor/assets generate from assets/logo.png; iOS + Android icon and splash assets (COMPLY-01)
-- [ ] 07-04-PLAN.md — App Store Connect + Google Play Console listings populated, STORE-LISTINGS.md snapshot (COMPLY-05)
+- [x] 07-04-PLAN.md — App Store Connect + Google Play Console listings populated, STORE-LISTINGS.md snapshot (COMPLY-05)
 
 ### Phase 8: Distribution
 **Goal**: Both apps are published — iOS is live on the App Store and Android is live on Google Play after passing review
@@ -139,5 +139,5 @@ Plans:
 | 4. Launch Readiness | v1.0 | 2/2 | Complete | 2026-05-04 |
 | 5. Capacitor Infrastructure | v1.1 | 4/4 | Complete   | 2026-05-18 |
 | 6. Native Features | v1.1 | 3/4 | In Progress|  |
-| 7. Compliance + Submission Prep | v1.1 | 3/4 | In Progress|  |
+| 7. Compliance + Submission Prep | v1.1 | 4/4 | Complete   | 2026-05-24 |
 | 8. Distribution | v1.1 | 0/TBD | Not started | - |
