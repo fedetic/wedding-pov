@@ -28,12 +28,7 @@ export function DeleteAccountButton() {
       setStatus("error");
       return;
     }
-    if (data?.success) {
-      router.push("/login");
-      return;
-    }
-    setErrorMessage("Unexpected response from server.");
-    setStatus("error");
+    router.push("/login");
   }
 
   if (status === "stale") {
