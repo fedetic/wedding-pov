@@ -264,7 +264,7 @@ export function GuestUploadClient({ eventSlug, eventName, photoLimit, thankYouMe
             Select your photos
           </h2>
           <p className="text-sm text-[#6b7280] mb-6">
-            Up to {photoLimit} photos · JPEG, PNG, HEIC supported
+            Choose up to <strong>{photoLimit}</strong> photos · JPEG, PNG, HEIC supported
           </p>
 
           {/* Hidden file input + styled label */}
