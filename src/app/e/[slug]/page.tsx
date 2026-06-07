@@ -1,9 +1,20 @@
+import type { Metadata } from 'next';
 import { db } from '@/lib/db';
 import { events } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { GuestUploadClient } from '@/components/guest/GuestUploadClient';
 
 export const dynamic = 'force-dynamic';
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const [event] = await db.select().from(events).where(eq(events.slug, slug)).limit(1);
+  return { title: event?.name ?? 'Event' };
+}
 
 function EventNotFound() {
   return (
